@@ -1,11 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
-import path from 'path';
 
 dotenv.config({ path: '.env' });
 
+/**
+ * Playwright E2E Configuration for Cromatic Vision Optical
+ *
+ * Architecture:
+ *   - Go devserver (in-memory mock): http://localhost:8080
+ *   - Vite frontend (React SPA):     http://localhost:3001 (proxies /api → 8080)
+ *
+ * baseURL is set to the frontend for page.goto() navigation.
+ * API tests use custom fixtures from ./tests/e2e/fixtures.ts that route to port 8080.
+ */
 export default defineConfig({
-  // globalSetup: './tests/e2e/global.setup.ts', // Disabled: requires Postgres
   testDir: './tests/e2e',
   timeout: 60 * 1000,
   expect: {
@@ -14,11 +22,10 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 1 : 1, // run serially to avoid database concurrency conflicts
+  workers: process.env.CI ? 1 : 1,
   reporter: [['html'], ['list']],
   use: {
     actionTimeout: 0,
-    // Frontend Vite dev server runs on 3001; backend Go API runs on 3000.
     baseURL: 'http://localhost:3001',
     trace: 'retain-on-failure',
     video: 'retain-on-failure',
@@ -28,6 +35,10 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-headed',
+      use: { ...devices['Desktop Chrome'], headless: false },
     },
     {
       name: 'firefox',
@@ -40,14 +51,12 @@ export default defineConfig({
   ],
   webServer: [
     {
-      // Dev server with in-memory mock repos — no Docker/Postgres/Redis needed
       command: 'go run cmd/devserver/main.go',
-      port: 3000,
+      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
     },
     {
-      // Vite React frontend — runs on port 3001 (package.json: "dev": "vite --port=3001")
       command: 'npm run dev',
       port: 3001,
       timeout: 120 * 1000,

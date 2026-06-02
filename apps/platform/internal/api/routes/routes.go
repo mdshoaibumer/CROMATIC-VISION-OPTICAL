@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"log/slog"
 
 	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
@@ -45,8 +46,8 @@ func SetupRoutes(app *fiber.App, db *database.DB, redisClient *redis.RedisClient
 	authGroup.Post("/refresh", authHandler.Refresh)
 
 	// Protected Auth routes
-	authGroup.Get("/me", middleware.AuthMiddleware(cfg.JWTSecret), authHandler.Me)
-	authGroup.Get("/admin-only-test", middleware.AuthMiddleware(cfg.JWTSecret), middleware.AdminOnly(), func(c fiber.Ctx) error {
+	authGroup.Get("/me", middleware.AuthMiddleware(cfg.JWTSecret, redisClient), authHandler.Me)
+	authGroup.Get("/admin-only-test", middleware.AuthMiddleware(cfg.JWTSecret, redisClient), middleware.AdminOnly(), func(c fiber.Ctx) error {
 		return c.JSON(response.OK(fiber.Map{"admin": true}, "Welcome, Administrator"))
 	})
 
@@ -80,8 +81,11 @@ func SetupRoutes(app *fiber.App, db *database.DB, redisClient *redis.RedisClient
 	notifySvc := service.NewNotificationService(cfg)
 	invSvc := service.NewInvoiceService(invoiceRepo, orderRepo, userRepo, storageSvc, notifySvc)
 
-	// Set circular or setter dependency linkage for auto billing trigger
-	paySvc.SetInvoiceService(invSvc)
+	// Set payment capture callback for auto-invoice generation (event-based, no circular dependency)
+	paySvc.SetOnPaymentCaptured(func(ctx context.Context, orderID int64) error {
+		_, err := invSvc.GenerateInvoice(ctx, orderID)
+		return err
+	})
 
 	categoryHandler := v1.NewCategoryHandler(categorySvc)
 	productHandler := v1.NewProductHandler(productSvc)
@@ -93,7 +97,7 @@ func SetupRoutes(app *fiber.App, db *database.DB, redisClient *redis.RedisClient
 	invoiceHandler := v1.NewInvoiceHandler(invSvc)
 
 	// Admin catalog and orders endpoints
-	adminGroup := v1Group.Group("/admin", middleware.AuthMiddleware(cfg.JWTSecret), middleware.AdminOnly())
+	adminGroup := v1Group.Group("/admin", middleware.AuthMiddleware(cfg.JWTSecret, redisClient), middleware.AdminOnly(), middleware.ValidateContentType("application/json", "multipart/form-data"))
 
 	adminGroup.Post("/categories", categoryHandler.CreateCategory)
 	adminGroup.Put("/categories/:id", categoryHandler.UpdateCategory)
@@ -138,7 +142,7 @@ func SetupRoutes(app *fiber.App, db *database.DB, redisClient *redis.RedisClient
 	v1Group.Get("/products/:slug", productHandler.GetProductBySlug)
 
 	// Customer protected endpoints
-	customerGroup := v1Group.Group("", middleware.AuthMiddleware(cfg.JWTSecret))
+	customerGroup := v1Group.Group("", middleware.AuthMiddleware(cfg.JWTSecret, redisClient))
 
 	// Carts routes
 	customerGroup.Get("/cart", cartHandler.GetCart)

@@ -86,6 +86,7 @@ services:
       REDIS_PORT: "6379"
       REDIS_PASSWORD: ""
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+      POSTGRES_SSLMODE: "disable"
     networks:
       - cromatic-network
 
@@ -97,6 +98,13 @@ volumes:
     driver: local
   redis_data:
     driver: local
+
+# ==============================================================================
+# Docker Networks
+# ==============================================================================
+networks:
+  cromatic-network:
+    driver: bridge
 
 # ==============================================================================
 # Network Definition

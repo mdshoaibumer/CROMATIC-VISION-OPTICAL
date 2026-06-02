@@ -52,11 +52,11 @@ func main() {
 	cfg := &config.Config{
 		AppName:           "Cromatic Vision Optical (Dev)",
 		AppEnv:            "development",
-		AppPort:           "3000",
+		AppPort:           "8080",
 		AllowedOrigins:    "http://localhost:3001,http://localhost:5173",
 		JWTSecret:         "dev-secret-key-not-for-production",
 		StorageProvider:   "mock",
-		S3PublicURLPrefix: "http://localhost:3000/mock-files",
+		S3PublicURLPrefix: "http://localhost:8080/mock-files",
 	}
 
 	// ─── Storage ─────────────────────────────────────────────────────────────
@@ -72,7 +72,10 @@ func main() {
 	paySvc := service.NewPaymentService(payRepo, orderRepo, cfg)
 	notifySvc := service.NewNotificationService(cfg)
 	invSvc := service.NewInvoiceService(invoiceRepo, orderRepo, userRepo, storageSvc, notifySvc)
-	paySvc.SetInvoiceService(invSvc)
+	paySvc.SetOnPaymentCaptured(func(ctx context.Context, orderID int64) error {
+		_, err := invSvc.GenerateInvoice(ctx, orderID)
+		return err
+	})
 
 	// ─── Handlers ────────────────────────────────────────────────────────────
 	categoryHandler := v1.NewCategoryHandler(categorySvc)
@@ -106,7 +109,7 @@ func main() {
 	// Global middleware
 	app.Use(middleware.RequestID())
 	app.Use(middleware.CORS(cfg.AllowedOrigins))
-	app.Use(middleware.SecurityHeaders())
+	app.Use(middleware.SecurityHeaders(cfg.AppEnv))
 	app.Use(middleware.Recovery(log))
 	app.Use(middleware.RequestLogger(log))
 
@@ -230,7 +233,8 @@ func main() {
 	log.Info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	log.Info(fmt.Sprintf("🌐 API Server: http://localhost:%s", port))
 	log.Info("📦 Mode: In-Memory (no external dependencies)")
-	log.Info("👤 Test Admin: admin@cromatic.dev / admin123")
+	log.Info("� Vite proxy expects port 8080 — matched")
+	log.Info("�� Test Admin: admin@cromatic.dev / admin123")
 	log.Info("👤 Test User:  user@cromatic.dev / user123")
 	log.Info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 

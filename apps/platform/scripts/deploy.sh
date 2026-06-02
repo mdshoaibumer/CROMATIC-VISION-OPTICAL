@@ -5,7 +5,7 @@ set -e
 # Usage: ./scripts/deploy.sh [branch]
 
 BRANCH=${1:-main}
-BUILD_DIR="/opt/Cromatic Vision Optical"
+BUILD_DIR="/opt/cromatic-vision-optical"
 DOCKER_COMPOSE_FILE="$BUILD_DIR/docker-compose.prod.yml"
 
 echo "======================================"
@@ -16,9 +16,9 @@ echo "======================================"
 
 # 1. Fetch Latest Code
 echo "=> Fetching latest code..."
-cd $BUILD_DIR
-git fetch origin $BRANCH
-git reset --hard origin/$BRANCH
+cd "$BUILD_DIR"
+git fetch origin "$BRANCH"
+git reset --hard "origin/$BRANCH"
 
 # 2. Check Environment Variables
 if [ ! -f "$BUILD_DIR/.env" ]; then
@@ -29,26 +29,26 @@ fi
 echo "=> Env vars validated."
 
 # 3. Requesting HTTPS certificates if not existent (First time setup)
-if [ ! -d "$BUILD_DIR/certbot/conf/live/Cromatic Vision Optical.com" ]; then
+if [ ! -d "$BUILD_DIR/certbot/conf/live/cromaticvision.com" ]; then
     echo "=> ⚠️ No SSL certificates found. Creating dummy certs for Nginx boot..."
-    mkdir -p $BUILD_DIR/certbot/conf/live/Cromatic Vision Optical.com
-    mkdir -p $BUILD_DIR/certbot/conf/live/api.Cromatic Vision Optical.com
+    mkdir -p "$BUILD_DIR/certbot/conf/live/cromaticvision.com"
+    mkdir -p "$BUILD_DIR/certbot/conf/live/api.cromaticvision.com"
     # Note: A real init-letsencrypt.sh should be used here to get real certs
     # before nginx starts correctly for the first time.
 fi
 
 # 4. Pull and Build Docker Images
 echo "=> Pulling new base images and building layers..."
-docker compose -f $DOCKER_COMPOSE_FILE pull
-docker compose -f $DOCKER_COMPOSE_FILE build --no-cache
+docker compose -f "$DOCKER_COMPOSE_FILE" pull
+docker compose -f "$DOCKER_COMPOSE_FILE" build --no-cache
 
 # 5. Apply Database Migrations (Go / migrate)
 echo "=> Running database migrations..."
-# docker compose -f $DOCKER_COMPOSE_FILE run --rm backend /app/Cromatic Vision Optical-api migrate up
+# Migrations run automatically on app startup via database.RunMigrations
 
 # 6. Zero-Downtime Deployment (Recreate)
 echo "=> Restarting services with new containers..."
-docker compose -f $DOCKER_COMPOSE_FILE up -d --remove-orphans
+docker compose -f "$DOCKER_COMPOSE_FILE" up -d --remove-orphans
 
 # 7. Health Check
 echo "=> Performing Health Checks..."

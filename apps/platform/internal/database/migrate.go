@@ -11,9 +11,12 @@ import (
 )
 
 // RunMigrations executes all pending database migrations
-func RunMigrations(host, port, user, password, dbname string, log *slog.Logger) error {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, host, port, dbname)
+func RunMigrations(host, port, user, password, dbname, sslmode string, log *slog.Logger) error {
+	if sslmode == "" {
+		sslmode = "require"
+	}
+	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, host, port, dbname, sslmode)
 
 	m, err := migrate.New("file://db/migrations", connStr)
 	if err != nil {

@@ -45,14 +45,14 @@ func New() (*App, error) {
 	defer cancel()
 
 	// 3. Connect to Postgres DB
-	db, err := database.Connect(ctx, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, log)
+	db, err := database.Connect(ctx, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, cfg.PostgresSSLMode, log)
 	if err != nil {
 		log.Error("Database connection dropped", "error", err)
 		return nil, err
 	}
 
 	// 3b. Run pending database migrations
-	if err := database.RunMigrations(cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, log); err != nil {
+	if err := database.RunMigrations(cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, cfg.PostgresSSLMode, log); err != nil {
 		log.Error("Database migration failed", "error", err)
 		db.Close()
 		return nil, err
@@ -72,20 +72,22 @@ func New() (*App, error) {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
+		BodyLimit:    10 * 1024 * 1024, // 10MB max request body
 	})
 
 	// 6. Hook global middlewares in sequential order
 	fiberApp.Use(middleware.RequestID())                                // Transaction tracing ID
-	fiberApp.Use(middleware.SecurityHeaders())                          // Defense-in-depth security headers
+	fiberApp.Use(middleware.SecurityHeaders(cfg.AppEnv))                // Defense-in-depth security headers (env-aware caching)
 	fiberApp.Use(middleware.MetricsCollector())                         // Prometheus metrics collection
 	fiberApp.Use(middleware.RequestLogger(log))                         // Structured standard log
+	fiberApp.Use(middleware.AuditLogger(log))                           // Immutable audit trail for mutating operations
 	fiberApp.Use(middleware.CORS(cfg.AllowedOrigins))                   // Cross-origin Resource Sharing
 	fiberApp.Use(middleware.DefaultDistributedRateLimiter(redisClient)) // Redis-backed distributed rate limiting
 	fiberApp.Use(middleware.CSRFProtection(cfg.AppEnv))                 // CSRF double-submit cookie protection
 	fiberApp.Use(middleware.Recovery(log))                              // Capture panics safely
 
-	// Prometheus-compatible metrics endpoint
-	fiberApp.Get("/metrics", middleware.MetricsHandler())
+	// Prometheus-compatible metrics endpoint (admin-only)
+	fiberApp.Get("/metrics", middleware.AuthMiddleware(cfg.JWTSecret, redisClient), middleware.AdminOnly(), middleware.MetricsHandler())
 
 	// 7. Route attachments
 	routes.SetupRoutes(fiberApp, db, redisClient, log, cfg)

@@ -16,9 +16,12 @@ type DB struct {
 }
 
 // Connect initializes a connection pool and pings the PostgreSQL database
-func Connect(ctx context.Context, host, port, user, password, dbname string, log *slog.Logger) (*DB, error) {
-	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, host, port, dbname)
+func Connect(ctx context.Context, host, port, user, password, dbname, sslmode string, log *slog.Logger) (*DB, error) {
+	if sslmode == "" {
+		sslmode = "require"
+	}
+	connString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		user, password, host, port, dbname, sslmode)
 
 	// Since security might require keeping password hidden in startup logs:
 	log.Info("Connecting to PostgreSQL", "host", host, "port", port, "database", dbname)
