@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 19: Admin Invoices API', () => {
   test('Admin invoices requires auth', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/admin/invoices');
+    const res = await fetch('http://localhost:8080/api/v1/admin/invoices');
     expect(res.status).toBe(401);
   });
 

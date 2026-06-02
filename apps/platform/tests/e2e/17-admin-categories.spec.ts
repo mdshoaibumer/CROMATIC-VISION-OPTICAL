@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 17: Admin Categories API', () => {
   test('List categories (public)', async ({ request }) => {

@@ -1,13 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 5: Shopping Cart', () => {
   test('Cart endpoint requires authentication', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/cart');
+    const res = await fetch('http://localhost:8080/api/v1/cart');
     expect(res.status).toBe(401);
   });
 
   test('Add to cart requires authentication', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/cart/items', {
+    const res = await fetch('http://localhost:8080/api/v1/cart/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ product_id: 1, quantity: 1 }),

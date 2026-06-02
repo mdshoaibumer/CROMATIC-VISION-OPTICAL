@@ -123,7 +123,7 @@ export function Navbar() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
               {navigation.map((item) => (
                 <div
                   key={item.name}
@@ -134,6 +134,8 @@ export function Navbar() {
                   <Link
                     href={item.href}
                     className="px-4 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 transition-colors rounded-lg hover:bg-neutral-50"
+                    aria-haspopup={item.submenu ? "true" : undefined}
+                    aria-expanded={item.submenu ? (activeSubmenu === item.name) : undefined}
                   >
                     {item.name}
                   </Link>

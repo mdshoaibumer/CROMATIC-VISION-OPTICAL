@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 12: Admin Products API', () => {
   test('List products (public)', async ({ request }) => {

@@ -3,7 +3,7 @@
  * No PostgreSQL dependency — all operations use the REST API.
  */
 
-const API_BASE = 'http://localhost:3000/api/v1';
+const API_BASE = 'http://localhost:8080/api/v1';
 
 export async function registerUser(name: string, email: string, phone: string, password: string) {
   const res = await fetch(`${API_BASE}/auth/register`, {

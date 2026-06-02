@@ -1,22 +1,34 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024 || "ontouchstart" in window);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [0, 150]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.95]);
+  // Disable parallax on mobile/touch devices and when user prefers reduced motion
+  const shouldAnimate = !isMobile && !prefersReducedMotion;
+  const y = useTransform(scrollYProgress, [0, 1], shouldAnimate ? [0, 150] : [0, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5], shouldAnimate ? [1, 0] : [1, 1]);
+  const scale = useTransform(scrollYProgress, [0, 0.5], shouldAnimate ? [1, 0.95] : [1, 1]);
 
   return (
     <section

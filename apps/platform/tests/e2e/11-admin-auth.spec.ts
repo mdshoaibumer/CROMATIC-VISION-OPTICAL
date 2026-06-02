@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 11: Admin Authentication', () => {
   test('Admin login via API', async ({ request }) => {

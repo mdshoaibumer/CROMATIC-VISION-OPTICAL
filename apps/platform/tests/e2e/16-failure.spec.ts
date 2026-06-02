@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 16: Error Handling', () => {
   test('Non-existent product returns error', async ({ request }) => {
@@ -28,7 +28,7 @@ test.describe('Suite 16: Error Handling', () => {
   });
 
   test('Invalid JSON handled gracefully', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/auth/login', {
+    const res = await fetch('http://localhost:8080/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{"invalid json',

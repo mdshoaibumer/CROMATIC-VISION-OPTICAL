@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 15: Security Validation', () => {
   test('Protected endpoints require auth', async () => {
@@ -13,7 +13,7 @@ test.describe('Suite 15: Security Validation', () => {
       '/api/v1/admin/invoices',
     ];
     for (const endpoint of endpoints) {
-      const res = await fetch(`http://localhost:3000${endpoint}`);
+      const res = await fetch(`http://localhost:8080${endpoint}`);
       expect(res.status, `${endpoint} should require auth`).toBe(401);
     }
   });

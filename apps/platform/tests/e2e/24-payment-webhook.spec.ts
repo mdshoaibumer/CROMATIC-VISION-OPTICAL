@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 24: Payment Webhook', () => {
   test('Webhook endpoint responds', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/payments/webhook', {
+    const res = await fetch('http://localhost:8080/api/v1/payments/webhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'payment.captured', payload: {} }),
@@ -12,7 +12,7 @@ test.describe('Suite 24: Payment Webhook', () => {
   });
 
   test('Webhook rejects empty body', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/payments/webhook', {
+    const res = await fetch('http://localhost:8080/api/v1/payments/webhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',

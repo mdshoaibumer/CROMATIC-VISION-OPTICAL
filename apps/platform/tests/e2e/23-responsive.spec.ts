@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 23: Responsive Design', () => {
   test('Homepage renders on mobile viewport', async ({ page }) => {

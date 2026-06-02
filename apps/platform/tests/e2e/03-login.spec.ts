@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 3: User Login', () => {
   test('Login via API with seeded user', async ({ request }) => {

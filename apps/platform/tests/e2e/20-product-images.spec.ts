@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 20: Product Images API', () => {
   test('Product has images field', async ({ request }) => {

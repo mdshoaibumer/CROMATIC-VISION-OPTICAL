@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 25: Auth Advanced Scenarios', () => {
   test('Logout invalidates session', async ({ request }) => {

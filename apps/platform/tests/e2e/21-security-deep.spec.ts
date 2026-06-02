@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 21: Security Deep Dive', () => {
   test('SQL injection in query params handled', async ({ request }) => {

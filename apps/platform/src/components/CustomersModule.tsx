@@ -211,7 +211,7 @@ export default function CustomersModule() {
                     No orders associated with this patient account
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-75 overflow-y-auto pr-1">
                     {getCustomerOrders(selectedCustomer.id).map((o) => (
                       <div
                         key={o.id}
@@ -241,7 +241,7 @@ export default function CustomersModule() {
                 <div className="bg-zinc-950 p-4 rounded-lg border border-border/40 flex items-center justify-between text-xs">
                   <div>
                     <p className="font-bold text-zinc-300">Active status indicator</p>
-                    <p className="text-[10px] text-zinc-500 mt-1 leading-normal max-w-[240px]">
+                    <p className="text-[10px] text-zinc-500 mt-1 leading-normal max-w-60">
                       Suspend accounts to restrict order checkouts or disable login access instantly.
                     </p>
                   </div>

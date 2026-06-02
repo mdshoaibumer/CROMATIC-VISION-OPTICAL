@@ -130,7 +130,7 @@ export default function EyeglassesPage() {
 
               {Object.entries(filters).map(([category, options]) => (
                 <div key={category} className="mb-8">
-                  <h4 className="text-xs font-semibold text-neutral-900 capitalize mb-3 tracking-wide uppercase">
+                  <h4 className="text-xs font-semibold text-neutral-900 mb-3 tracking-wide uppercase">
                     {category}
                   </h4>
                   <div className="space-y-2.5">

@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 6: Orders', () => {
   test('Orders endpoint requires auth', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/orders');
+    const res = await fetch('http://localhost:8080/api/v1/orders');
     expect(res.status).toBe(401);
   });
 
@@ -17,7 +17,7 @@ test.describe('Suite 6: Orders', () => {
   });
 
   test('Create order requires auth', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/orders', { method: 'POST' });
+    const res = await fetch('http://localhost:8080/api/v1/orders', { method: 'POST' });
     expect(res.status).toBe(401);
   });
 });

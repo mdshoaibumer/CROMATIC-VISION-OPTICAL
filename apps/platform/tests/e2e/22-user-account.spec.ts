@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 22: User Account Page', () => {
   test('Account route renders', async ({ page }) => {

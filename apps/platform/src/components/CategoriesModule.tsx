@@ -173,7 +173,7 @@ export default function CategoriesModule() {
                     </span>
                   </div>
 
-                  <p className="text-xs text-zinc-400 leading-normal min-h-[36px]">
+                  <p className="text-xs text-zinc-400 leading-normal min-h-9">
                     {cat.description || "Supports multiple lens parameters and customized frame templates."}
                   </p>
                 </div>

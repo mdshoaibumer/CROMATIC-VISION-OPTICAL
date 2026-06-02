@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 8: Payment Integration', () => {
   test('Payment endpoint requires auth', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/payments/create-order', {
+    const res = await fetch('http://localhost:8080/api/v1/payments/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ order_id: 1 }),

@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 test.describe('Suite 7: Prescriptions', () => {
   test('Prescriptions require auth', async () => {
-    const res = await fetch('http://localhost:3000/api/v1/prescriptions');
+    const res = await fetch('http://localhost:8080/api/v1/prescriptions');
     expect(res.status).toBe(401);
   });
 
