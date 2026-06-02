@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react"
+import React, { useRef, useState, useEffect } from "react"
 import { motion, useInView } from "framer-motion"
 import { Heart, Plus, ArrowUpRight, Star, ShoppingBag } from "lucide-react"
 import { apiRequest } from "../../lib/api"
@@ -65,7 +65,7 @@ interface DisplayProduct {
   tag?: string
 }
 
-function ProductCard({ product, index }: { product: DisplayProduct, index: number }) {
+function ProductCard({ product, index }: { product: DisplayProduct, index: number, key?: string | number }) {
   const [isFavorited, setIsFavorited] = useState(false)
   const { addItem } = useCartStore()
 

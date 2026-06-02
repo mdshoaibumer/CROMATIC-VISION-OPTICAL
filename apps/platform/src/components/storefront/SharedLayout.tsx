@@ -117,6 +117,7 @@ export function Reveal({
   children: ReactNode
   className?: string
   delay?: number
+  key?: string | number
 }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-60px" })

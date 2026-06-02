@@ -153,7 +153,8 @@ export default function App() {
   // Storefront content component based on route
   const StorefrontContent = () => (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <div key={location.pathname}>
+        <Routes location={location}>
         <Route path="/" element={<PageTransition><StorefrontHomeLuxury /></PageTransition>} />
         <Route path="/products" element={
           <PageTransition>
@@ -203,6 +204,7 @@ export default function App() {
           </PageTransition>
         } />
       </Routes>
+      </div>
     </AnimatePresence>
   );
 
