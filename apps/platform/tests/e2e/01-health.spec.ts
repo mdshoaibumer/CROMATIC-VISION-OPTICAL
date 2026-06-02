@@ -4,24 +4,21 @@ test.describe('Suite 1: Application Health', () => {
   test('Frontend Homepage Loads', async ({ page }) => {
     const res = await page.goto('/');
     expect(res?.status()).toBe(200);
-    await expect(page.getByText('Customer Storefront', { exact: false })).toBeVisible();
-    await expect(page.getByText('Cromatic Vision Admin Console', { exact: false })).toBeVisible();
+    // Luxury storefront should show brand name and hero CTA
+    await expect(page.getByText('Cromatic', { exact: false }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Shop Collection', { exact: false }).first()).toBeVisible();
   });
 
   test('Products Page Loads', async ({ page }) => {
-    await page.goto('/');
-    // Check navigation
-    await page.getByRole('button', { name: /Browse Collection/i }).first().click().catch(() => {});
-    // Wait for network idle or product grid to appear
-    await expect(page.getByText('Engineering Studio', { exact: false }).first()).toBeVisible({ timeout: 10000 }).catch(() => {});
+    await page.goto('/products');
+    // Wait for product grid or page content to appear
+    await expect(page.locator('main, [role="main"], #main-content').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('Login Page Loads', async ({ page }) => {
-    const res = await page.goto('/?view=admin');
+    const res = await page.goto('/admin');
     expect(res?.status()).toBe(200);
-    // Note: React router in this app seems to be hash or custom based on states, let's just click admin view
-    await page.getByRole('button', { name: /Cromatic Vision Admin Console/i }).click();
-    await expect(page.getByText('Sign in to Cromatic Vision Console', { exact: false })).toBeVisible();
+    await expect(page.getByText('Sign in to Cromatic Vision', { exact: false })).toBeVisible({ timeout: 10000 });
   });
 
   test('No Console Errors', async ({ page }) => {
