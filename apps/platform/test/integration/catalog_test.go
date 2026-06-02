@@ -469,7 +469,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/admin/categories", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, err := app.Test(req, 1*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("Connection fails: %v", err)
 		}
@@ -487,7 +487,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer customer__token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusForbidden {
@@ -507,7 +507,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, err := app.Test(req, 1*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("Execution fails: %v", err)
 		}
@@ -540,7 +540,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusConflict {
@@ -566,7 +566,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -593,7 +593,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, err := app.Test(req, 1*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("Test request fails: %v", err)
 		}
@@ -634,7 +634,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -653,7 +653,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -675,7 +675,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 	// 5. Public listings and search/filtering controls checking
 	t.Run("Public query listing categories successfully", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/api/v1/categories", nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -687,7 +687,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		// Category Slug search
 		path := "/api/v1/products?category_slug=sunglasses&brand=RayBan&page=1&limit=5"
 		req, _ := http.NewRequest(http.MethodGet, path, nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -712,7 +712,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 	t.Run("Retrieve individual details by slug succeeds and returns structures", func(t *testing.T) {
 		path := fmt.Sprintf("/api/v1/products/%s", registeredProductSlug)
 		req, _ := http.NewRequest(http.MethodGet, path, nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -737,7 +737,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodDelete, path, nil)
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -747,7 +747,7 @@ func TestCatalogCompleteLifecycle(t *testing.T) {
 		// Detail should now return 404
 		detailPath := fmt.Sprintf("/api/v1/products/%s", registeredProductSlug)
 		reqDet, _ := http.NewRequest(http.MethodGet, detailPath, nil)
-		respDet, _ := app.Test(reqDet, 1*time.Second)
+		respDet, _ := app.Test(reqDet)
 		defer respDet.Body.Close()
 
 		if respDet.StatusCode != http.StatusNotFound {

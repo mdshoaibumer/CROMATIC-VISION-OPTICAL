@@ -217,7 +217,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/payments/create-order", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated {
@@ -245,7 +245,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/user2/payments/create-order", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusForbidden {
@@ -263,7 +263,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/payments/verify", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -290,7 +290,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/payments/create-order", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -308,7 +308,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/payments/verify", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -354,7 +354,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		// Send mock signature to pass signature validation
 		req.Header.Set("X-Razorpay-Signature", "mock_webhook_signature_for_test")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -393,7 +393,7 @@ func TestPaymentsIntegration(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Razorpay-Signature", "mock_webhook_signature_for_test")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {

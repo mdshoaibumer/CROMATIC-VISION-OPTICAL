@@ -3,9 +3,9 @@ package middleware
 import (
 	"context"
 
-	"github.com/google/uuid"
-	"github.com/gofiber/fiber/v3"
 	"github.com/cromatic-vision-optical/backend/internal/logger"
+	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 )
 
 const (
@@ -31,12 +31,12 @@ func RequestID() fiber.Handler {
 		c.Locals(LocalsRequestIDKey, reqID)
 
 		// 4. Wrap the standard context to include Request ID for logging library
-		ctx := c.UserContext()
+		ctx := c.Context()
 		if ctx == nil {
 			ctx = context.Background()
 		}
 		newCtx := logger.WithRequestID(ctx, reqID)
-		c.SetUserContext(newCtx)
+		c.SetContext(newCtx)
 
 		return c.Next()
 	}

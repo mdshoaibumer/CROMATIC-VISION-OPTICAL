@@ -276,7 +276,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Retrieve customer's invoices list successfully", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/api/v1/invoices", nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -297,7 +297,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Retrieve individual invoice details belonging to customer", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/invoices/%d", createdInvoiceID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -318,7 +318,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Prevent unauthorized customer profiles from viewing cross-account billing invoice details", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/user2/invoices/%d", createdInvoiceID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusNotFound {
@@ -328,7 +328,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Download valid PDF invoice file successfully", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/invoices/%d/download", createdInvoiceID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -359,7 +359,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Prevent cross-account customer accounts from downloading PDF receipts", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/user2/invoices/%d/download", createdInvoiceID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusNotFound {
@@ -369,7 +369,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Admin view list fetches all logged invoices successfully", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/api/v1/admin/invoices", nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -390,7 +390,7 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 
 	t.Run("Admin downloading any invoice record succeeded with general file access", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/admin/invoices/%d/download", createdInvoiceID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {

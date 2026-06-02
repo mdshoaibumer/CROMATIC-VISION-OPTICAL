@@ -593,7 +593,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 
 	t.Run("Get cart automatically creates an empty cart if not existing", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, "/api/v1/cart", nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -621,7 +621,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/cart/items", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -651,7 +651,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/cart/items", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -669,7 +669,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, reqPath, bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -686,7 +686,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, reqPath, bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -715,7 +715,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/orders", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated {
@@ -761,7 +761,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/orders", bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -775,7 +775,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		reqPath := fmt.Sprintf("/api/v1/orders/%d", createdOrderID)
 		req, _ := http.NewRequest(http.MethodGet, reqPath, nil)
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -803,7 +803,7 @@ func TestCartAndOrdersFlow(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, reqPath, bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {

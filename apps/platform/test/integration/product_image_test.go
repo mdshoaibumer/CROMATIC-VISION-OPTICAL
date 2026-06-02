@@ -11,7 +11,6 @@ import (
 	"net/textproto"
 	"strings"
 	"testing"
-	"time"
 
 	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
@@ -150,7 +149,7 @@ func TestProductImageLifecycle(t *testing.T) {
 	// Test case 1: Guest trying to upload is unauthorized
 	t.Run("Permissions Boundary - Gated Guest upload blocked", func(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "test.png", "image/png", []byte("fakedata"), "")
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusUnauthorized {
@@ -162,7 +161,7 @@ func TestProductImageLifecycle(t *testing.T) {
 	t.Run("Permissions Boundary - Gated Customer upload forbidden", func(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "test.png", "image/png", []byte("fakedata"), "")
 		req.Header.Set("Authorization", "Bearer customer__token")
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusForbidden {
@@ -174,7 +173,7 @@ func TestProductImageLifecycle(t *testing.T) {
 	t.Run("Validation Filter - Reject invalid file formats (txt)", func(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "document.txt", "text/plain", []byte("sample text contents"), "")
 		req.Header.Set("Authorization", "Bearer admin_token")
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -194,7 +193,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "big-picture.png", "image/png", largeContent, "")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, err := app.Test(req, 5*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			// Fiber rejects oversized bodies at framework level — this is correct behavior
 			t.Logf("Request correctly rejected at framework level: %v", err)
@@ -214,7 +213,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "active-glass.png", "image/png", imgBytes, "false")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated {
@@ -244,7 +243,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "front-view.jpg", "image/jpeg", imgBytes, "true")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated {
@@ -279,7 +278,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		publicURL := fmt.Sprintf("/api/v1/products/%s", product.Slug)
 		req, _ := http.NewRequest(http.MethodGet, publicURL, nil)
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -314,7 +313,7 @@ func TestProductImageLifecycle(t *testing.T) {
 			req, _ := createMultipartReq(urlString, filename, "image/webp", imgBytes, "false")
 			req.Header.Set("Authorization", "Bearer admin_token")
 
-			resp, _ := app.Test(req, 1*time.Second)
+			resp, _ := app.Test(req)
 			resp.Body.Close()
 		}
 
@@ -322,7 +321,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		req, _ := createMultipartReq(urlString, "eleventh-view.png", "image/png", imgBytes, "false")
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -342,7 +341,7 @@ func TestProductImageLifecycle(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodDelete, deleteUrl, nil)
 		req.Header.Set("Authorization", "Bearer admin_token")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -363,3 +362,4 @@ func TestProductImageLifecycle(t *testing.T) {
 		}
 	})
 }
+

@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
 	"github.com/gofiber/fiber/v3"
@@ -31,7 +30,7 @@ func TestHealthEndpoints(t *testing.T) {
 			t.Fatalf("Could not create HTTP request: %v", err)
 		}
 
-		resp, err := app.Test(req, 2*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("Expected response but got error: %v", err)
 		}
@@ -67,7 +66,7 @@ func TestHealthEndpoints(t *testing.T) {
 			t.Fatalf("Could not create HTTP request: %v", err)
 		}
 
-		resp, err := app.Test(req, 2*time.Second)
+		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("Expected response but got error: %v", err)
 		}

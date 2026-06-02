@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"testing"
-	"time"
 
 	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
@@ -157,7 +156,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/api/v1/admin/orders/%d/status", order1.ID), bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -171,7 +170,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/api/v1/admin/orders/%d/status", order2.ID), bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -188,7 +187,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/prescriptions", body)
 		req.Header.Set("Content-Type", boundary)
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusBadRequest {
@@ -206,7 +205,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/prescriptions", body)
 		req.Header.Set("Content-Type", boundary)
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusCreated {
@@ -230,7 +229,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 
 	t.Run("Retrieve uploaded prescription details by authorized customer is successful", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/prescriptions/%d", createdRxID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -240,7 +239,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 
 	t.Run("Retrieve uploaded prescription of another customer yields not found / unauthorized", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/user2/prescriptions/%d", createdRxID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusNotFound {
@@ -250,7 +249,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 
 	t.Run("Admin can retrieve specific prescription and view full list", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/admin/prescriptions/%d", createdRxID), nil)
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -258,7 +257,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		}
 
 		reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/admin/prescriptions", nil)
-		respList, _ := app.Test(reqList, 1*time.Second)
+		respList, _ := app.Test(reqList)
 		defer respList.Body.Close()
 
 		if respList.StatusCode != http.StatusOK {
@@ -272,7 +271,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/api/v1/admin/prescriptions/%d/status", createdRxID), bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
@@ -296,7 +295,7 @@ func TestPrescriptionsIntegration(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("/api/v1/admin/orders/%d/status", order2.ID), bytes.NewBuffer(jsonVal))
 		req.Header.Set("Content-Type", "application/json")
 
-		resp, _ := app.Test(req, 1*time.Second)
+		resp, _ := app.Test(req)
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
