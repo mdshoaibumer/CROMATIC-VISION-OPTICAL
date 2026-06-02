@@ -341,6 +341,42 @@ func (m *MockOrderRepository) CreateOrderWithTx(
 
 // -- MOCK PRESCRIPTION REPOSITORY --
 
+func (m *MockOrderRepository) AdminListOrdersPaged(ctx context.Context, limit, offset int32) ([]sqlc.AdminListOrdersPagedRow, error) {
+	var list []sqlc.AdminListOrdersPagedRow
+	for _, o := range m.orders {
+		list = append(list, sqlc.AdminListOrdersPagedRow{
+			ID:              o.ID,
+			UserID:          o.UserID,
+			Status:          o.Status,
+			TotalAmount:     o.TotalAmount,
+			TrackingNumber:  o.TrackingNumber,
+			ShippingAddress: o.ShippingAddress,
+			CreatedAt:       o.CreatedAt,
+			UpdatedAt:       o.UpdatedAt,
+		})
+	}
+	return list, nil
+}
+
+func (m *MockOrderRepository) AdminGetOrderDetails(ctx context.Context, orderID int64) (sqlc.AdminGetOrderDetailsRow, error) {
+	o, ok := m.orders[orderID]
+	if !ok {
+		return sqlc.AdminGetOrderDetailsRow{}, fmt.Errorf("no rows in result set")
+	}
+	return sqlc.AdminGetOrderDetailsRow{
+		ID:              o.ID,
+		UserID:          o.UserID,
+		Status:          o.Status,
+		TotalAmount:     o.TotalAmount,
+		TrackingNumber:  o.TrackingNumber,
+		ShippingAddress: o.ShippingAddress,
+		CreatedAt:       o.CreatedAt,
+		UpdatedAt:       o.UpdatedAt,
+	}, nil
+}
+
+// -- MOCK PRESCRIPTION REPOSITORY --
+
 type MockPrescriptionRepository struct {
 	prescriptions map[int64]sqlc.Prescription
 	nextID        int64
@@ -423,6 +459,44 @@ func (m *MockPrescriptionRepository) ListByOrderID(ctx context.Context, orderID 
 		}
 	}
 	return list, nil
+}
+
+func (m *MockPrescriptionRepository) AdminListAllPrescriptions(ctx context.Context) ([]sqlc.AdminListAllPrescriptionsRow, error) {
+	var list []sqlc.AdminListAllPrescriptionsRow
+	for _, rx := range m.prescriptions {
+		list = append(list, sqlc.AdminListAllPrescriptionsRow{
+			ID:               rx.ID,
+			OrderID:          rx.OrderID,
+			UserID:           rx.UserID,
+			PrescriptionType: rx.PrescriptionType,
+			FileUrl:          rx.FileUrl,
+			ObjectKey:        rx.ObjectKey,
+			Notes:            rx.Notes,
+			Status:           rx.Status,
+			CreatedAt:        rx.CreatedAt,
+			UpdatedAt:        rx.UpdatedAt,
+		})
+	}
+	return list, nil
+}
+
+func (m *MockPrescriptionRepository) AdminGetPrescriptionByID(ctx context.Context, id int64) (sqlc.AdminGetPrescriptionByIDRow, error) {
+	rx, ok := m.prescriptions[id]
+	if !ok {
+		return sqlc.AdminGetPrescriptionByIDRow{}, fmt.Errorf("no rows in result set")
+	}
+	return sqlc.AdminGetPrescriptionByIDRow{
+		ID:               rx.ID,
+		OrderID:          rx.OrderID,
+		UserID:           rx.UserID,
+		PrescriptionType: rx.PrescriptionType,
+		FileUrl:          rx.FileUrl,
+		ObjectKey:        rx.ObjectKey,
+		Notes:            rx.Notes,
+		Status:           rx.Status,
+		CreatedAt:        rx.CreatedAt,
+		UpdatedAt:        rx.UpdatedAt,
+	}, nil
 }
 
 // -- INTEGRATION TESTS FLOW --

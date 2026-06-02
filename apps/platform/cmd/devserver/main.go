@@ -229,9 +229,9 @@ func main() {
 	port := cfg.AppPort
 	log.Info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	log.Info(fmt.Sprintf("🌐 API Server: http://localhost:%s", port))
-	log.Info(fmt.Sprintf("📦 Mode: In-Memory (no external dependencies)"))
-	log.Info(fmt.Sprintf("👤 Test Admin: admin@cromatic.dev / admin123"))
-	log.Info(fmt.Sprintf("👤 Test User:  user@cromatic.dev / user123"))
+	log.Info("📦 Mode: In-Memory (no external dependencies)")
+	log.Info("👤 Test Admin: admin@cromatic.dev / admin123")
+	log.Info("👤 Test User:  user@cromatic.dev / user123")
 	log.Info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	// Graceful shutdown
