@@ -50,20 +50,24 @@ type VerifySignatureRequest struct {
 	RazorpaySignature string `json:"razorpay_signature"`
 }
 
+// OnPaymentCapturedFunc is a callback invoked when a payment is successfully captured.
+// This decouples payment from invoice generation, removing the circular dependency.
+type OnPaymentCapturedFunc func(ctx context.Context, orderID int64) error
+
 type PaymentService interface {
 	CreateRazorpayOrder(ctx context.Context, userID uuid.UUID, orderID int64) (PaymentResponse, error)
 	VerifyRazorpaySignature(ctx context.Context, req VerifySignatureRequest) (PaymentResponse, error)
 	ProcessWebhook(ctx context.Context, rawBody []byte, signature string) error
 	ListPayments(ctx context.Context, userID uuid.UUID) ([]PaymentResponse, error)
-	SetInvoiceService(invSvc InvoiceService)
+	SetOnPaymentCaptured(fn OnPaymentCapturedFunc)
 }
 
 type paymentService struct {
-	payRepo   repository.PaymentRepository
-	orderRepo repository.OrderRepository
-	cfg       *config.Config
-	client    *http.Client
-	invSvc    InvoiceService
+	payRepo           repository.PaymentRepository
+	orderRepo         repository.OrderRepository
+	cfg               *config.Config
+	client            *http.Client
+	onPaymentCaptured OnPaymentCapturedFunc
 }
 
 func NewPaymentService(payRepo repository.PaymentRepository, orderRepo repository.OrderRepository, cfg *config.Config) PaymentService {
@@ -77,8 +81,8 @@ func NewPaymentService(payRepo repository.PaymentRepository, orderRepo repositor
 	}
 }
 
-func (s *paymentService) SetInvoiceService(invSvc InvoiceService) {
-	s.invSvc = invSvc
+func (s *paymentService) SetOnPaymentCaptured(fn OnPaymentCapturedFunc) {
+	s.onPaymentCaptured = fn
 }
 
 func (s *paymentService) CreateRazorpayOrder(ctx context.Context, userID uuid.UUID, orderID int64) (PaymentResponse, error) {
@@ -186,8 +190,8 @@ func (s *paymentService) VerifyRazorpaySignature(ctx context.Context, req Verify
 		return PaymentResponse{}, fmt.Errorf("failed to process database payment capture updates: %w", err)
 	}
 
-	if s.invSvc != nil {
-		_, _ = s.invSvc.GenerateInvoice(ctx, paymentRecord.OrderID)
+	if s.onPaymentCaptured != nil {
+		_ = s.onPaymentCaptured(ctx, paymentRecord.OrderID)
 	}
 
 	return s.mapResponse(paymentRecord), nil
@@ -244,8 +248,8 @@ func (s *paymentService) ProcessWebhook(ctx context.Context, rawBody []byte, sig
 			return fmt.Errorf("transaction failed during webhook payment capture updates: %w", err)
 		}
 
-		if s.invSvc != nil {
-			_, _ = s.invSvc.GenerateInvoice(ctx, payRecord.OrderID)
+		if s.onPaymentCaptured != nil {
+			_ = s.onPaymentCaptured(ctx, payRecord.OrderID)
 		}
 
 	case "payment.failed":

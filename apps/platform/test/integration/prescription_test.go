@@ -57,27 +57,40 @@ func TestPrescriptionsIntegration(t *testing.T) {
 	user1 := uuid.New().String()
 	user2 := uuid.New().String()
 
-	authMiddlewareMock := func(role, userID string) fiber.Handler {
-		return func(c fiber.Ctx) error {
-			c.Locals("user_id", userID)
-			c.Locals("role", role)
-			return c.Next()
-		}
+	user1CustomerAuth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user1)
+		c.Locals("role", "customer")
+		return c.Next()
 	}
 
-	// Mount endpoints for testing purposes
-	app.Post("/api/v1/prescriptions", authMiddlewareMock("customer", user1), rxHandler.UploadPrescription)
-	app.Get("/api/v1/prescriptions/:id", authMiddlewareMock("customer", user1), rxHandler.GetPrescription)
-	app.Get("/api/v1/prescriptions", authMiddlewareMock("customer", user1), rxHandler.ListPrescriptions)
+	user2CustomerAuth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user2)
+		c.Locals("role", "customer")
+		return c.Next()
+	}
+
+	adminAuth := func(c fiber.Ctx) error {
+		c.Locals("user_id", "admin_user")
+		c.Locals("role", "admin")
+		return c.Next()
+	}
+
+	// Mount endpoints using Group middleware (Fiber v3 compatible)
+	u1Group := app.Group("/api/v1/prescriptions", user1CustomerAuth)
+	u1Group.Post("/", rxHandler.UploadPrescription)
+	u1Group.Get("/:id", rxHandler.GetPrescription)
+	u1Group.Get("/", rxHandler.ListPrescriptions)
 
 	// User2 client endpoints
-	app.Get("/api/v1/user2/prescriptions/:id", authMiddlewareMock("customer", user2), rxHandler.GetPrescription)
+	u2Group := app.Group("/api/v1/user2/prescriptions", user2CustomerAuth)
+	u2Group.Get("/:id", rxHandler.GetPrescription)
 
 	// Admin endpoints
-	app.Get("/api/v1/admin/prescriptions", authMiddlewareMock("admin", "admin_user"), rxHandler.AdminListPrescriptions)
-	app.Get("/api/v1/admin/prescriptions/:id", authMiddlewareMock("admin", "admin_user"), rxHandler.AdminGetPrescription)
-	app.Put("/api/v1/admin/prescriptions/:id/status", authMiddlewareMock("admin", "admin_user"), rxHandler.AdminUpdateStatus)
-	app.Put("/api/v1/admin/orders/:id/status", authMiddlewareMock("admin", "admin_user"), orderHandler.AdminUpdateOrderStatus)
+	adminGroup := app.Group("/api/v1/admin", adminAuth)
+	adminGroup.Get("/prescriptions", rxHandler.AdminListPrescriptions)
+	adminGroup.Get("/prescriptions/:id", rxHandler.AdminGetPrescription)
+	adminGroup.Put("/prescriptions/:id/status", rxHandler.AdminUpdateStatus)
+	adminGroup.Put("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
 
 	// Create test products
 	ctx := context.Background()

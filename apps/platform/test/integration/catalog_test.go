@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/cromatic-vision-optical/backend/internal/service"
 	"github.com/cromatic-vision-optical/backend/internal/shared/response"
 	"github.com/gofiber/fiber/v3"
+	"github.com/jackc/pgx/v5"
 )
 
 // -- MOCK REPOSITORIES IMPLEMENTATIONS --
@@ -50,7 +52,7 @@ func (m *MockCategoryRepository) Create(ctx context.Context, arg sqlc.CreateCate
 func (m *MockCategoryRepository) Update(ctx context.Context, arg sqlc.UpdateCategoryParams) (sqlc.Category, error) {
 	cat, ok := m.categories[arg.ID]
 	if !ok {
-		return sqlc.Category{}, fmt.Errorf("no rows in result set")
+		return sqlc.Category{}, pgx.ErrNoRows
 	}
 	if arg.Name != nil {
 		cat.Name = *arg.Name
@@ -68,7 +70,7 @@ func (m *MockCategoryRepository) Update(ctx context.Context, arg sqlc.UpdateCate
 
 func (m *MockCategoryRepository) Delete(ctx context.Context, id int64) error {
 	if _, ok := m.categories[id]; !ok {
-		return fmt.Errorf("no rows in result set")
+		return pgx.ErrNoRows
 	}
 	delete(m.categories, id)
 	return nil
@@ -77,7 +79,7 @@ func (m *MockCategoryRepository) Delete(ctx context.Context, id int64) error {
 func (m *MockCategoryRepository) GetByID(ctx context.Context, id int64) (sqlc.Category, error) {
 	cat, ok := m.categories[id]
 	if !ok {
-		return sqlc.Category{}, fmt.Errorf("no rows in result set")
+		return sqlc.Category{}, pgx.ErrNoRows
 	}
 	return cat, nil
 }
@@ -88,7 +90,7 @@ func (m *MockCategoryRepository) GetBySlug(ctx context.Context, slug string) (sq
 			return cat, nil
 		}
 	}
-	return sqlc.Category{}, fmt.Errorf("no rows in result set")
+	return sqlc.Category{}, pgx.ErrNoRows
 }
 
 func (m *MockCategoryRepository) List(ctx context.Context) ([]sqlc.Category, error) {
@@ -142,7 +144,7 @@ func (m *MockProductRepository) Create(ctx context.Context, arg sqlc.CreateProdu
 func (m *MockProductRepository) Update(ctx context.Context, arg sqlc.UpdateProductParams) (sqlc.Product, error) {
 	p, ok := m.products[arg.ID]
 	if !ok {
-		return sqlc.Product{}, fmt.Errorf("no rows in result set")
+		return sqlc.Product{}, pgx.ErrNoRows
 	}
 	if arg.CategoryID != nil {
 		p.CategoryID = arg.CategoryID
@@ -187,7 +189,7 @@ func (m *MockProductRepository) Update(ctx context.Context, arg sqlc.UpdateProdu
 
 func (m *MockProductRepository) Delete(ctx context.Context, id int64) error {
 	if _, ok := m.products[id]; !ok {
-		return fmt.Errorf("no rows in result set")
+		return pgx.ErrNoRows
 	}
 	delete(m.products, id)
 	delete(m.images, id)
@@ -197,7 +199,7 @@ func (m *MockProductRepository) Delete(ctx context.Context, id int64) error {
 func (m *MockProductRepository) GetByID(ctx context.Context, id int64) (sqlc.Product, error) {
 	p, ok := m.products[id]
 	if !ok {
-		return sqlc.Product{}, fmt.Errorf("no rows in result set")
+		return sqlc.Product{}, pgx.ErrNoRows
 	}
 	return p, nil
 }
@@ -208,7 +210,7 @@ func (m *MockProductRepository) GetBySlug(ctx context.Context, slug string) (sql
 			return p, nil
 		}
 	}
-	return sqlc.Product{}, fmt.Errorf("no rows in result set")
+	return sqlc.Product{}, pgx.ErrNoRows
 }
 
 func (m *MockProductRepository) GetDetailsBySlug(ctx context.Context, slug string) (repository.ProductWithDetails, error) {
@@ -222,10 +224,18 @@ func (m *MockProductRepository) GetDetailsBySlug(ctx context.Context, slug strin
 			catName = &cat.Name
 		}
 	}
+	imgs := make([]sqlc.ProductImage, len(m.images[p.ID]))
+	copy(imgs, m.images[p.ID])
+	sort.Slice(imgs, func(i, j int) bool {
+		if imgs[i].IsPrimary != imgs[j].IsPrimary {
+			return imgs[i].IsPrimary
+		}
+		return imgs[i].ID < imgs[j].ID
+	})
 	return repository.ProductWithDetails{
 		Product:      p,
 		CategoryName: catName,
-		Images:       m.images[p.ID],
+		Images:       imgs,
 	}, nil
 }
 
@@ -346,13 +356,13 @@ func (m *MockProductRepository) GetImageByID(ctx context.Context, id int64) (sql
 			}
 		}
 	}
-	return sqlc.ProductImage{}, fmt.Errorf("no rows in result set")
+	return sqlc.ProductImage{}, pgx.ErrNoRows
 }
 
 func (m *MockProductRepository) DeleteImageByID(ctx context.Context, id int64, productID int64) error {
 	imgList, ok := m.images[productID]
 	if !ok {
-		return fmt.Errorf("no rows in result set")
+		return pgx.ErrNoRows
 	}
 	found := false
 	var updated []sqlc.ProductImage
@@ -364,7 +374,7 @@ func (m *MockProductRepository) DeleteImageByID(ctx context.Context, id int64, p
 		updated = append(updated, img)
 	}
 	if !found {
-		return fmt.Errorf("no rows in result set")
+		return pgx.ErrNoRows
 	}
 	m.images[productID] = updated
 	return nil

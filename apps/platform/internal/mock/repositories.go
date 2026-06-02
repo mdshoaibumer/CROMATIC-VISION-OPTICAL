@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -260,6 +261,13 @@ func (r *ProductRepository) buildDetails(_ context.Context, p sqlc.Product) repo
 			imgs = append(imgs, img)
 		}
 	}
+	// Sort primary images first to match production SQL ordering
+	sort.Slice(imgs, func(i, j int) bool {
+		if imgs[i].IsPrimary != imgs[j].IsPrimary {
+			return imgs[i].IsPrimary
+		}
+		return imgs[i].ID < imgs[j].ID
+	})
 	return repository.ProductWithDetails{
 		Product:      p,
 		CategoryName: catName,
@@ -369,6 +377,13 @@ func (r *ProductRepository) ListImages(_ context.Context, productID int64) ([]sq
 			result = append(result, img)
 		}
 	}
+	// Sort primary images first to match production SQL ordering
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].IsPrimary != result[j].IsPrimary {
+			return result[i].IsPrimary
+		}
+		return result[i].ID < result[j].ID
+	})
 	return result, nil
 }
 

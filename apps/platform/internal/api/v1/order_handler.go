@@ -198,7 +198,7 @@ func (h *OrderHandler) AdminUpdateOrderStatus(c fiber.Ctx) error {
 
 	order, err := h.orderSvc.UpdateOrderStatus(c.Context(), orderID, req.Status)
 	if err != nil {
-		if errors.Is(err, service.ErrInvalidStatus) {
+		if errors.Is(err, service.ErrInvalidStatus) || errors.Is(err, service.ErrPrescriptionReq) {
 			c.Status(fiber.StatusBadRequest)
 			return c.JSON(response.Err("VALIDATION_ERROR", err.Error()))
 		}

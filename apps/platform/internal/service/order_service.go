@@ -11,6 +11,7 @@ import (
 
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
 	"github.com/cromatic-vision-optical/backend/internal/repository"
+	"github.com/cromatic-vision-optical/backend/internal/shared/money"
 	"github.com/cromatic-vision-optical/backend/internal/shared/sanitize"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -142,7 +143,7 @@ func (s *orderService) CreateOrder(ctx context.Context, userID uuid.UUID, shippi
 			price = *p.SalePrice
 		}
 
-		subtotal := price * float64(ci.Quantity)
+		subtotal := money.Multiply(price, int(ci.Quantity))
 		totalAmount += subtotal
 
 		snapStruct := ProductSnapshot{
@@ -174,7 +175,7 @@ func (s *orderService) CreateOrder(ctx context.Context, userID uuid.UUID, shippi
 	trackingNum := s.generateTrackingNo()
 
 	// 4. Delegate Postgres transaction flow to Repository layer
-	orderRecord, itemRecords, err := s.orderRepo.CreateOrderWithTx(ctx, userID, totalAmount, trackingNum, shippingAddress, txItems)
+	orderRecord, itemRecords, err := s.orderRepo.CreateOrderWithTx(ctx, userID, money.RoundTo2(totalAmount), trackingNum, shippingAddress, txItems)
 	if err != nil {
 		if strings.Contains(err.Error(), "stock") || strings.Contains(err.Error(), "insufficient") {
 			return OrderResponse{}, ErrOutOfStock

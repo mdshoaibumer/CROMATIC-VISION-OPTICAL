@@ -6,6 +6,7 @@ import (
 
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
 	"github.com/cromatic-vision-optical/backend/internal/repository"
+	"github.com/cromatic-vision-optical/backend/internal/shared/money"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -242,7 +243,7 @@ func (s *cartService) assembleCartResponse(ctx context.Context, cart sqlc.Cart) 
 			price = *dbItem.ProductSalePrice
 		}
 
-		subtotal := price * float64(dbItem.Quantity)
+		subtotal := money.Multiply(price, int(dbItem.Quantity))
 		totalAmt += subtotal
 		totalCount += dbItem.Quantity
 
@@ -268,7 +269,7 @@ func (s *cartService) assembleCartResponse(ctx context.Context, cart sqlc.Cart) 
 		ID:          cart.ID,
 		UserID:      cart.UserID,
 		Items:       items,
-		TotalAmount: totalAmt,
+		TotalAmount: money.RoundTo2(totalAmt),
 		TotalCount:  totalCount,
 	}, nil
 }

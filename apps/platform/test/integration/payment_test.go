@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -17,6 +16,7 @@ import (
 	"github.com/cromatic-vision-optical/backend/internal/service"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type MockPaymentRepository struct {
@@ -53,7 +53,7 @@ func (m *MockPaymentRepository) Create(ctx context.Context, arg sqlc.CreatePayme
 func (m *MockPaymentRepository) GetByID(ctx context.Context, id int64) (sqlc.Payment, error) {
 	pay, ok := m.payments[id]
 	if !ok {
-		return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+		return sqlc.Payment{}, pgx.ErrNoRows
 	}
 	return pay, nil
 }
@@ -64,25 +64,25 @@ func (m *MockPaymentRepository) GetByProviderOrderID(ctx context.Context, provid
 			return pay, nil
 		}
 	}
-	return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+	return sqlc.Payment{}, pgx.ErrNoRows
 }
 
 func (m *MockPaymentRepository) GetByProviderPaymentID(ctx context.Context, providerPaymentID *string) (sqlc.Payment, error) {
 	if providerPaymentID == nil {
-		return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+		return sqlc.Payment{}, pgx.ErrNoRows
 	}
 	for _, pay := range m.payments {
 		if pay.ProviderPaymentID != nil && *pay.ProviderPaymentID == *providerPaymentID {
 			return pay, nil
 		}
 	}
-	return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+	return sqlc.Payment{}, pgx.ErrNoRows
 }
 
 func (m *MockPaymentRepository) UpdateStatus(ctx context.Context, id int64, status string) (sqlc.Payment, error) {
 	pay, ok := m.payments[id]
 	if !ok {
-		return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+		return sqlc.Payment{}, pgx.ErrNoRows
 	}
 	pay.Status = status
 	pay.UpdatedAt = time.Now()
@@ -93,7 +93,7 @@ func (m *MockPaymentRepository) UpdateStatus(ctx context.Context, id int64, stat
 func (m *MockPaymentRepository) UpdateStatusAndPaymentID(ctx context.Context, id int64, status string, providerPaymentID *string) (sqlc.Payment, error) {
 	pay, ok := m.payments[id]
 	if !ok {
-		return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+		return sqlc.Payment{}, pgx.ErrNoRows
 	}
 	pay.Status = status
 	pay.ProviderPaymentID = providerPaymentID
@@ -124,7 +124,7 @@ func (m *MockPaymentRepository) ProcessPaymentCapture(ctx context.Context, provi
 	}
 
 	if !found {
-		return sqlc.Payment{}, fmt.Errorf("no rows in result set")
+		return sqlc.Payment{}, pgx.ErrNoRows
 	}
 
 	if targetPay.Status == "CAPTURED" {
@@ -164,20 +164,25 @@ func TestPaymentsIntegration(t *testing.T) {
 	user1 := uuid.New().String()
 	user2 := uuid.New().String()
 
-	authMiddlewareMock := func(userID string) fiber.Handler {
-		return func(c fiber.Ctx) error {
-			c.Locals("user_id", userID)
-			return c.Next()
-		}
+	user1Auth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user1)
+		return c.Next()
 	}
 
-	// Route bindings
-	app.Post("/api/v1/payments/create-order", authMiddlewareMock(user1), payHandler.CreateOrder)
-	app.Post("/api/v1/payments/verify", authMiddlewareMock(user1), payHandler.VerifySignature)
+	user2Auth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user2)
+		return c.Next()
+	}
+
+	// Route bindings using Group middleware (Fiber v3 compatible)
+	u1Group := app.Group("/api/v1/payments", user1Auth)
+	u1Group.Post("/create-order", payHandler.CreateOrder)
+	u1Group.Post("/verify", payHandler.VerifySignature)
 	app.Post("/api/v1/webhooks/razorpay", payHandler.HandleWebhook)
 
 	// User2 custom routed payments context for user mismatch testing
-	app.Post("/api/v1/user2/payments/create-order", authMiddlewareMock(user2), payHandler.CreateOrder)
+	u2Group := app.Group("/api/v1/user2/payments", user2Auth)
+	u2Group.Post("/create-order", payHandler.CreateOrder)
 
 	// Seed category and frames product to construct order
 	ctx := context.Background()

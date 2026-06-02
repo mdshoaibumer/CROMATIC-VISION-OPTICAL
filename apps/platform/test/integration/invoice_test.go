@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cromatic-vision-optical/backend/internal/api/v1"
+	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
 	"github.com/cromatic-vision-optical/backend/internal/config"
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
 	"github.com/cromatic-vision-optical/backend/internal/repository"
@@ -53,8 +53,8 @@ func (m *MockUserRepository) CreateMockUser(id uuid.UUID, name, email string) sq
 }
 
 type MockInvoiceRepository struct {
-	invoices map[int64]sqlc.Invoice
-	nextID   int64
+	invoices  map[int64]sqlc.Invoice
+	nextID    int64
 	orderRepo repository.OrderRepository
 }
 
@@ -158,7 +158,10 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 	invoiceSvc := service.NewInvoiceService(invoiceRepo, orderRepo, userRepo, storageSvc, notifySvc)
 
 	paySvc := service.NewPaymentService(payRepo, orderRepo, cfg)
-	paySvc.SetInvoiceService(invoiceSvc)
+	paySvc.SetOnPaymentCaptured(func(ctx context.Context, orderID int64) error {
+		_, err := invoiceSvc.GenerateInvoice(ctx, orderID)
+		return err
+	})
 
 	invoiceHandler := v1.NewInvoiceHandler(invoiceSvc)
 
@@ -169,21 +172,26 @@ func TestInvoiceIntegrationFlow(t *testing.T) {
 	userRepo.CreateMockUser(user1, "John Shoaib", "md.shoaibumer@gmail.com")
 	userRepo.CreateMockUser(user2, "Unauthorized User", "unauthorized@cromaticvision.com")
 
-	authMiddlewareMock := func(userID string) fiber.Handler {
-		return func(c fiber.Ctx) error {
-			c.Locals("user_id", userID)
-			return c.Next()
-		}
+	user1Auth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user1.String())
+		return c.Next()
 	}
 
-	// Register API endpoints
-	app.Get("/api/v1/invoices", authMiddlewareMock(user1.String()), invoiceHandler.ListInvoices)
-	app.Get("/api/v1/invoices/:id", authMiddlewareMock(user1.String()), invoiceHandler.GetInvoice)
-	app.Get("/api/v1/invoices/:id/download", authMiddlewareMock(user1.String()), invoiceHandler.DownloadInvoice)
+	user2Auth := func(c fiber.Ctx) error {
+		c.Locals("user_id", user2.String())
+		return c.Next()
+	}
+
+	// Register API endpoints using Group middleware (Fiber v3 compatible)
+	u1Group := app.Group("/api/v1/invoices", user1Auth)
+	u1Group.Get("/", invoiceHandler.ListInvoices)
+	u1Group.Get("/:id", invoiceHandler.GetInvoice)
+	u1Group.Get("/:id/download", invoiceHandler.DownloadInvoice)
 
 	// User 2 context endpoint
-	app.Get("/api/v1/user2/invoices/:id", authMiddlewareMock(user2.String()), invoiceHandler.GetInvoice)
-	app.Get("/api/v1/user2/invoices/:id/download", authMiddlewareMock(user2.String()), invoiceHandler.DownloadInvoice)
+	u2Group := app.Group("/api/v1/user2/invoices", user2Auth)
+	u2Group.Get("/:id", invoiceHandler.GetInvoice)
+	u2Group.Get("/:id/download", invoiceHandler.DownloadInvoice)
 
 	// Admin routes
 	app.Get("/api/v1/admin/invoices", invoiceHandler.AdminListInvoices)

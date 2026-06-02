@@ -10,12 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cromatic-vision-optical/backend/internal/api/v1"
+	v1 "github.com/cromatic-vision-optical/backend/internal/api/v1"
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
 	"github.com/cromatic-vision-optical/backend/internal/repository"
 	"github.com/cromatic-vision-optical/backend/internal/service"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // -- MOCK CART REPOSITORY --
@@ -39,7 +40,7 @@ func NewMockCartRepository(prodRepo repository.ProductRepository) *MockCartRepos
 func (m *MockCartRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (sqlc.Cart, error) {
 	cart, ok := m.carts[userID]
 	if !ok {
-		return sqlc.Cart{}, fmt.Errorf("no rows in result set")
+		return sqlc.Cart{}, pgx.ErrNoRows
 	}
 	return cart, nil
 }
@@ -64,7 +65,7 @@ func (m *MockCartRepository) GetItemByProduct(ctx context.Context, cartID int64,
 			return item, nil
 		}
 	}
-	return sqlc.CartItem{}, fmt.Errorf("no rows in result set")
+	return sqlc.CartItem{}, pgx.ErrNoRows
 }
 
 func (m *MockCartRepository) CreateItem(ctx context.Context, arg sqlc.CreateCartItemParams) (sqlc.CartItem, error) {
@@ -106,7 +107,7 @@ func (m *MockCartRepository) UpdateItemQuantity(ctx context.Context, arg sqlc.Up
 	}
 
 	if !found {
-		return sqlc.CartItem{}, fmt.Errorf("no rows in result set")
+		return sqlc.CartItem{}, pgx.ErrNoRows
 	}
 	return updated, nil
 }
@@ -124,7 +125,7 @@ func (m *MockCartRepository) DeleteItem(ctx context.Context, arg sqlc.DeleteCart
 	}
 	m.cartItems[arg.CartID] = newList
 	if !found {
-		return fmt.Errorf("no rows in result set")
+		return pgx.ErrNoRows
 	}
 	return nil
 }
@@ -142,7 +143,7 @@ func (m *MockCartRepository) GetItemByID(ctx context.Context, id int64) (sqlc.Ca
 			}
 		}
 	}
-	return sqlc.CartItem{}, fmt.Errorf("no rows in result set")
+	return sqlc.CartItem{}, pgx.ErrNoRows
 }
 
 func (m *MockCartRepository) ListItemsDetailed(ctx context.Context, cartID int64) ([]sqlc.ListCartItemsDetailedRow, error) {
@@ -224,7 +225,7 @@ func (m *MockOrderRepository) CreateItem(ctx context.Context, arg sqlc.CreateOrd
 func (m *MockOrderRepository) GetByID(ctx context.Context, id int64) (sqlc.Order, error) {
 	order, ok := m.orders[id]
 	if !ok {
-		return sqlc.Order{}, fmt.Errorf("no rows in result set")
+		return sqlc.Order{}, pgx.ErrNoRows
 	}
 	return order, nil
 }
@@ -271,7 +272,7 @@ func (m *MockOrderRepository) ListOrderItems(ctx context.Context, orderID int64)
 func (m *MockOrderRepository) UpdateStatus(ctx context.Context, orderID int64, status string) (sqlc.Order, error) {
 	o, ok := m.orders[orderID]
 	if !ok {
-		return sqlc.Order{}, fmt.Errorf("no rows in result set")
+		return sqlc.Order{}, pgx.ErrNoRows
 	}
 	o.Status = status
 	o.UpdatedAt = time.Now()
@@ -361,7 +362,7 @@ func (m *MockOrderRepository) AdminListOrdersPaged(ctx context.Context, limit, o
 func (m *MockOrderRepository) AdminGetOrderDetails(ctx context.Context, orderID int64) (sqlc.AdminGetOrderDetailsRow, error) {
 	o, ok := m.orders[orderID]
 	if !ok {
-		return sqlc.AdminGetOrderDetailsRow{}, fmt.Errorf("no rows in result set")
+		return sqlc.AdminGetOrderDetailsRow{}, pgx.ErrNoRows
 	}
 	return sqlc.AdminGetOrderDetailsRow{
 		ID:              o.ID,
@@ -409,7 +410,7 @@ func (m *MockPrescriptionRepository) Create(ctx context.Context, arg sqlc.Create
 func (m *MockPrescriptionRepository) GetByID(ctx context.Context, id int64) (sqlc.Prescription, error) {
 	rx, ok := m.prescriptions[id]
 	if !ok {
-		return sqlc.Prescription{}, fmt.Errorf("no rows in result set")
+		return sqlc.Prescription{}, pgx.ErrNoRows
 	}
 	return rx, nil
 }
@@ -417,7 +418,7 @@ func (m *MockPrescriptionRepository) GetByID(ctx context.Context, id int64) (sql
 func (m *MockPrescriptionRepository) GetByIDAndUserID(ctx context.Context, id int64, userID uuid.UUID) (sqlc.Prescription, error) {
 	rx, ok := m.prescriptions[id]
 	if !ok || rx.UserID != userID {
-		return sqlc.Prescription{}, fmt.Errorf("no rows in result set")
+		return sqlc.Prescription{}, pgx.ErrNoRows
 	}
 	return rx, nil
 }
@@ -443,7 +444,7 @@ func (m *MockPrescriptionRepository) ListAll(ctx context.Context) ([]sqlc.Prescr
 func (m *MockPrescriptionRepository) UpdateStatus(ctx context.Context, id int64, status string) (sqlc.Prescription, error) {
 	rx, ok := m.prescriptions[id]
 	if !ok {
-		return sqlc.Prescription{}, fmt.Errorf("no rows in result set")
+		return sqlc.Prescription{}, pgx.ErrNoRows
 	}
 	rx.Status = status
 	rx.UpdatedAt = time.Now()
@@ -483,7 +484,7 @@ func (m *MockPrescriptionRepository) AdminListAllPrescriptions(ctx context.Conte
 func (m *MockPrescriptionRepository) AdminGetPrescriptionByID(ctx context.Context, id int64) (sqlc.AdminGetPrescriptionByIDRow, error) {
 	rx, ok := m.prescriptions[id]
 	if !ok {
-		return sqlc.AdminGetPrescriptionByIDRow{}, fmt.Errorf("no rows in result set")
+		return sqlc.AdminGetPrescriptionByIDRow{}, pgx.ErrNoRows
 	}
 	return sqlc.AdminGetPrescriptionByIDRow{
 		ID:               rx.ID,
@@ -523,25 +524,25 @@ func TestCartAndOrdersFlow(t *testing.T) {
 	prodActive := "active"
 	prodStock := int32(5)
 	p1, _ := prodRepo.Create(ctx, sqlc.CreateProductParams{
-		CategoryID:  &cat.ID,
-		Name:        "Classic Wayfarer Black",
-		Slug:        "classic-wayfarer-black",
-		Price:       productPrice,
-		SalePrice:   &productSalePrice,
-		Brand:       "Rayban",
-		Stock:       prodStock,
-		Status:      prodActive,
+		CategoryID: &cat.ID,
+		Name:       "Classic Wayfarer Black",
+		Slug:       "classic-wayfarer-black",
+		Price:      productPrice,
+		SalePrice:  &productSalePrice,
+		Brand:      "Rayban",
+		Stock:      prodStock,
+		Status:     prodActive,
 	})
 
 	prodStock2 := int32(2)
 	p2, _ := prodRepo.Create(ctx, sqlc.CreateProductParams{
-		CategoryID:  &cat.ID,
-		Name:        "Clubmaster Tortoise",
-		Slug:        "clubmaster-tortoise",
-		Price:       110.0,
-		Brand:       "Rayban",
-		Stock:       prodStock2,
-		Status:      prodActive,
+		CategoryID: &cat.ID,
+		Name:       "Clubmaster Tortoise",
+		Slug:       "clubmaster-tortoise",
+		Price:      110.0,
+		Brand:      "Rayban",
+		Stock:      prodStock2,
+		Status:     prodActive,
 	})
 
 	// Setup Services & Handlers
@@ -556,27 +557,33 @@ func TestCartAndOrdersFlow(t *testing.T) {
 	customerUID := uuid.New().String()
 	adminUID := uuid.New().String()
 
-	mockAuth := func(role, userID string) fiber.Handler {
-		return func(c fiber.Ctx) error {
-			c.Locals("user_id", userID)
-			c.Locals("role", role)
-			return c.Next()
-		}
+	customerAuth := func(c fiber.Ctx) error {
+		c.Locals("user_id", customerUID)
+		c.Locals("role", "customer")
+		return c.Next()
 	}
 
-	// Mount protected routes
-	app.Get("/api/v1/cart", mockAuth("customer", customerUID), cartHandler.GetCart)
-	app.Post("/api/v1/cart/items", mockAuth("customer", customerUID), cartHandler.AddCartItem)
-	app.Put("/api/v1/cart/items/:id", mockAuth("customer", customerUID), cartHandler.UpdateCartItem)
-	app.Delete("/api/v1/cart/items/:id", mockAuth("customer", customerUID), cartHandler.DeleteCartItem)
+	adminAuth := func(c fiber.Ctx) error {
+		c.Locals("user_id", adminUID)
+		c.Locals("role", "admin")
+		return c.Next()
+	}
 
-	app.Post("/api/v1/orders", mockAuth("customer", customerUID), orderHandler.CreateOrder)
-	app.Get("/api/v1/orders", mockAuth("customer", customerUID), orderHandler.GetOrders)
-	app.Get("/api/v1/orders/:id", mockAuth("customer", customerUID), orderHandler.GetOrderDetails)
+	// Mount protected routes using Group middleware (Fiber v3 compatible)
+	customerGroup := app.Group("/api/v1", customerAuth)
+	customerGroup.Get("/cart", cartHandler.GetCart)
+	customerGroup.Post("/cart/items", cartHandler.AddCartItem)
+	customerGroup.Put("/cart/items/:id", cartHandler.UpdateCartItem)
+	customerGroup.Delete("/cart/items/:id", cartHandler.DeleteCartItem)
 
-	app.Get("/api/v1/admin/orders", mockAuth("admin", adminUID), orderHandler.AdminListOrders)
-	app.Get("/api/v1/admin/orders/:id", mockAuth("admin", adminUID), orderHandler.AdminGetOrderDetails)
-	app.Put("/api/v1/admin/orders/:id/status", mockAuth("admin", adminUID), orderHandler.AdminUpdateOrderStatus)
+	customerGroup.Post("/orders", orderHandler.CreateOrder)
+	customerGroup.Get("/orders", orderHandler.GetOrders)
+	customerGroup.Get("/orders/:id", orderHandler.GetOrderDetails)
+
+	adminGroup := app.Group("/api/v1/admin", adminAuth)
+	adminGroup.Get("/orders", orderHandler.AdminListOrders)
+	adminGroup.Get("/orders/:id", orderHandler.AdminGetOrderDetails)
+	adminGroup.Put("/orders/:id/status", orderHandler.AdminUpdateOrderStatus)
 
 	// Shared testing states
 	var createdCartItemID int64
