@@ -208,13 +208,19 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 	// 1. Fetch user by email
 	u, err := h.queries.GetUserByEmail(c.Context(), req.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
-		middleware.RecordFailedLogin(c.Context(), h.redis, c.IP())
+		middleware.RecordFailedLogin(c.Context(), h.redis, c.IP(), req.Email)
 		c.Status(fiber.StatusUnauthorized)
 		return c.JSON(response.Err("UNAUTHORIZED", "Invalid email or password"))
 	} else if err != nil {
 		h.log.Error("Database failure fetching auth credentials", "error", err)
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(response.Err("INTERNAL_ERROR", "Database query lookup error"))
+	}
+
+	// 1b. Check if this email is locked out (distributed brute-force protection)
+	if middleware.IsEmailLocked(c.Context(), h.redis, req.Email) {
+		c.Status(fiber.StatusTooManyRequests)
+		return c.JSON(response.Err("ACCOUNT_LOCKED", "Too many failed login attempts for this account. Please try again later."))
 	}
 
 	// 2. Validate current state
@@ -225,26 +231,26 @@ func (h *AuthHandler) Login(c fiber.Ctx) error {
 
 	// 3. Verify bcrypt hashes
 	if !auth.CheckPasswordHash(req.Password, u.PasswordHash) {
-		middleware.RecordFailedLogin(c.Context(), h.redis, c.IP())
+		middleware.RecordFailedLogin(c.Context(), h.redis, c.IP(), req.Email)
 		c.Status(fiber.StatusUnauthorized)
 		return c.JSON(response.Err("UNAUTHORIZED", "Invalid email or password"))
 	}
 
 	// Clear failed login attempts on successful auth
-	middleware.ClearLoginAttempts(c.Context(), h.redis, c.IP())
+	middleware.ClearLoginAttempts(c.Context(), h.redis, c.IP(), req.Email)
 
 	// 4. Generate Access & Refresh tokens
 	accessTokenExpiry := time.Now().Add(15 * time.Minute)
 	refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour)
 
-	accessToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, accessTokenExpiry)
+	accessToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, accessTokenExpiry, auth.TokenTypeAccess)
 	if err != nil {
 		h.log.Error("Failure generating JWT access token", "error", err)
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(response.Err("INTERNAL_ERROR", "Token creation error"))
 	}
 
-	refreshToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, refreshTokenExpiry)
+	refreshToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, refreshTokenExpiry, auth.TokenTypeRefresh)
 	if err != nil {
 		h.log.Error("Failure generating JWT refresh token", "error", err)
 		c.Status(fiber.StatusInternalServerError)
@@ -311,6 +317,12 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 		return c.JSON(response.Err("UNAUTHORIZED", "Refresh token is expired, malformed, or invalid"))
 	}
 
+	// 1b. Verify this is actually a refresh token (prevents access token misuse)
+	if claims.TokenType != auth.TokenTypeRefresh {
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(response.Err("UNAUTHORIZED", "Invalid token type for refresh"))
+	}
+
 	// 2. Fetch from Redis verifying it hasn't been blacklisted or logged out if client is available
 	if h.redis != nil && h.redis.Client != nil {
 		redisVal, err := h.redis.Client.Get(c.Context(), "refresh_token:"+claims.UserID).Result()
@@ -343,28 +355,31 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 		return c.JSON(response.Err("FORBIDDEN", "User account is suspended"))
 	}
 
-	// 4. Issue new access token and rotate refresh tokens if desired (standard practice)
+	// 4. Issue new access token and rotate refresh tokens (single-use rotation)
 	accessTokenExpiry := time.Now().Add(15 * time.Minute)
-	newAccessToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, accessTokenExpiry)
+	newAccessToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, accessTokenExpiry, auth.TokenTypeAccess)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(response.Err("INTERNAL_ERROR", "Token creation error"))
 	}
 
-	// Keep old refresh token or rotate with 7 day expiry
+	// Rotate refresh token with new 7-day expiry (old one is invalidated via Redis single-store)
 	refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour)
-	newRefreshToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, refreshTokenExpiry)
+	newRefreshToken, err := auth.GenerateToken(u.ID.String(), u.Role, h.jwtSecret, refreshTokenExpiry, auth.TokenTypeRefresh)
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(response.Err("INTERNAL_ERROR", "Token creation error"))
 	}
 
 	if h.redis != nil && h.redis.Client != nil {
+		// Store new refresh token (atomically invalidates old one since only one is valid per user)
 		err = h.redis.Client.Set(c.Context(), "refresh_token:"+u.ID.String(), newRefreshToken, 7*24*time.Hour).Err()
 		if err != nil {
 			c.Status(fiber.StatusInternalServerError)
 			return c.JSON(response.Err("INTERNAL_ERROR", "Cache service state synchronization failure"))
 		}
+		// Explicitly revoke the old refresh token to prevent any race condition replay
+		_ = auth.RevokeToken(c.Context(), h.redis.Client, refreshToken, claims)
 	}
 
 	setAuthCookies(c, newAccessToken, newRefreshToken, accessTokenExpiry, refreshTokenExpiry, h.appEnv == "production")
@@ -377,16 +392,21 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 	return c.JSON(response.OK(resp, "Token rotated successfully"))
 }
 
-// Logout de-registers refresh tokens from Redis and clears cookies
+// Logout de-registers refresh tokens from Redis, revokes access token, and clears cookies
 func (h *AuthHandler) Logout(c fiber.Ctx) error {
 	var userID string
+	var accessToken string
 
 	// 1. Try to read from cookies
-	accessToken := c.Cookies("access_token")
+	accessToken = c.Cookies("access_token")
 	if accessToken != "" {
 		claims, err := auth.VerifyToken(accessToken, h.jwtSecret)
 		if err == nil {
 			userID = claims.UserID
+			// Revoke the access token so it cannot be reused
+			if h.redis != nil && h.redis.Client != nil {
+				_ = auth.RevokeToken(c.Context(), h.redis.Client, accessToken, claims)
+			}
 		}
 	}
 
@@ -400,6 +420,10 @@ func (h *AuthHandler) Logout(c fiber.Ctx) error {
 				claims, err := auth.VerifyToken(tokenString, h.jwtSecret)
 				if err == nil {
 					userID = claims.UserID
+					// Revoke this token too
+					if h.redis != nil && h.redis.Client != nil {
+						_ = auth.RevokeToken(c.Context(), h.redis.Client, tokenString, claims)
+					}
 				}
 			}
 		}

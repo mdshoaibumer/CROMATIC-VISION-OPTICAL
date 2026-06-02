@@ -18,6 +18,7 @@ type DistributedRateLimiterConfig struct {
 	KeyPrefix   string
 	KeyFunc     func(c fiber.Ctx) string
 	RedisClient *redis.RedisClient
+	FailClosed  bool // If true, reject requests when Redis is unavailable (for auth endpoints)
 }
 
 // DistributedRateLimiter creates a Redis-backed rate limiter suitable for multi-instance deployments.
@@ -44,7 +45,12 @@ func DistributedRateLimiter(cfg DistributedRateLimiterConfig) fiber.Handler {
 		// Use Redis INCR with expiry for atomic rate limiting
 		count, err := cfg.RedisClient.Client.Incr(ctx, key).Result()
 		if err != nil {
-			// On Redis failure, allow the request through (fail open)
+			// On Redis failure, behavior depends on FailClosed setting
+			if cfg.FailClosed {
+				c.Status(fiber.StatusServiceUnavailable)
+				return c.JSON(response.Err("SERVICE_UNAVAILABLE", "Rate limiting service unavailable. Please try again later."))
+			}
+			// Fail open for non-critical endpoints
 			return c.Next()
 		}
 
@@ -84,12 +90,14 @@ func DefaultDistributedRateLimiter(redisClient *redis.RedisClient) fiber.Handler
 }
 
 // StrictDistributedRateLimiter returns a stricter Redis-backed limiter for auth endpoints
+// This fails closed — if Redis is unavailable, auth requests are rejected for security.
 func StrictDistributedRateLimiter(redisClient *redis.RedisClient) fiber.Handler {
 	return DistributedRateLimiter(DistributedRateLimiterConfig{
 		Max:         10,
 		Window:      1 * time.Minute,
 		KeyPrefix:   "rl:strict:",
 		RedisClient: redisClient,
+		FailClosed:  true,
 		KeyFunc: func(c fiber.Ctx) string {
 			return c.IP()
 		},

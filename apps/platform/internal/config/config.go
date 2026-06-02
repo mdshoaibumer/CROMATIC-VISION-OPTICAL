@@ -20,6 +20,7 @@ type Config struct {
 	PostgresUser     string
 	PostgresPassword string
 	PostgresDB       string
+	PostgresSSLMode  string
 
 	RedisHost     string
 	RedisPort     string
@@ -65,6 +66,11 @@ func Load() (*Config, error) {
 		jwtSecret = "dev-only-insecure-jwt-secret-do-not-use-in-prod"
 	}
 
+	razorpayWebhookSecret := getEnv("RAZORPAY_WEBHOOK_SECRET", "")
+	if appEnv == "production" && razorpayWebhookSecret == "" {
+		return nil, fmt.Errorf("CRITICAL: RAZORPAY_WEBHOOK_SECRET must be set in production")
+	}
+
 	return &Config{
 		AppName: getEnv("APP_NAME", "cromatic-vision-api"),
 		AppEnv:  appEnv,
@@ -77,6 +83,12 @@ func Load() (*Config, error) {
 		PostgresUser:     getEnv("POSTGRES_USER", "postgres"),
 		PostgresPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgresDB:       getEnv("POSTGRES_DB", "cromatic_vision_db"),
+		PostgresSSLMode: getEnv("POSTGRES_SSLMODE", func() string {
+			if appEnv == "production" {
+				return "require"
+			}
+			return "disable"
+		}()),
 
 		RedisHost:     getEnv("REDIS_HOST", "localhost"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
@@ -94,7 +106,7 @@ func Load() (*Config, error) {
 
 		RazorpayKeyID:         getEnv("RAZORPAY_KEY_ID", ""),
 		RazorpayKeySecret:     getEnv("RAZORPAY_KEY_SECRET", ""),
-		RazorpayWebhookSecret: getEnv("RAZORPAY_WEBHOOK_SECRET", ""),
+		RazorpayWebhookSecret: razorpayWebhookSecret,
 
 		SMTPHost:     getEnv("SMTP_HOST", "localhost"),
 		SMTPPort:     getEnv("SMTP_PORT", "587"),

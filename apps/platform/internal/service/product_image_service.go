@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
 	"github.com/cromatic-vision-optical/backend/internal/repository"
 	"github.com/cromatic-vision-optical/backend/internal/storage"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -59,6 +60,12 @@ func (s *productImageService) UploadImage(ctx context.Context, productID int64, 
 		isValid = true
 	}
 	if !isValid {
+		return sqlc.ProductImage{}, ErrInvalidFileType
+	}
+
+	// 2b. Validate actual file content via magic-byte detection (prevents polyglot attacks)
+	detectedType := http.DetectContentType(fileData)
+	if !allowedTypes[detectedType] {
 		return sqlc.ProductImage{}, ErrInvalidFileType
 	}
 

@@ -19,6 +19,9 @@ func CORS(allowedOrigins string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		origin := c.Get("Origin")
 
+		// Always set Vary: Origin to prevent CDN cache poisoning
+		c.Set("Vary", "Origin")
+
 		// Determine if the incoming origin is allowed
 		allowOrigin := ""
 		if len(originsList) > 0 && originsList[0] == "*" {
