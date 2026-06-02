@@ -9,7 +9,6 @@ var (
 	hasUppercase = regexp.MustCompile(`[A-Z]`)
 	hasLowercase = regexp.MustCompile(`[a-z]`)
 	hasDigit     = regexp.MustCompile(`[0-9]`)
-	hasSpecial   = regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~]`)
 )
 
 // PasswordStrength validates password meets minimum security requirements.

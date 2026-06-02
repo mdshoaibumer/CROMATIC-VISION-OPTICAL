@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/cromatic-vision-optical/backend/internal/database/sqlc"
@@ -1147,9 +1146,8 @@ func (r *InvoiceRepository) UpdateStatus(_ context.Context, id int64, status str
 // ─── User Repository Mock ────────────────────────────────────────────────────
 
 type UserRepository struct {
-	mu     sync.RWMutex
-	users  []sqlc.User
-	nextID atomic.Int64
+	mu    sync.RWMutex
+	users []sqlc.User
 }
 
 func NewUserRepository() *UserRepository {

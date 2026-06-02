@@ -395,10 +395,9 @@ func (h *AuthHandler) Refresh(c fiber.Ctx) error {
 // Logout de-registers refresh tokens from Redis, revokes access token, and clears cookies
 func (h *AuthHandler) Logout(c fiber.Ctx) error {
 	var userID string
-	var accessToken string
 
 	// 1. Try to read from cookies
-	accessToken = c.Cookies("access_token")
+	accessToken := c.Cookies("access_token")
 	if accessToken != "" {
 		claims, err := auth.VerifyToken(accessToken, h.jwtSecret)
 		if err == nil {
