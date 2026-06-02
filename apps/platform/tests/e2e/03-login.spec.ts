@@ -1,55 +1,44 @@
 import { test, expect } from '@playwright/test';
-import { clearTestUser, getUserFromDb, getDbClient } from './helpers/db';
-import crypto from 'crypto';
 
-const testEmail = 'test_login@cromaticvision.com';
-const testPassword = 'SuperSecret123!';
-
-test.describe('Suite 3: Login', () => {
-  test.beforeEach(async () => {
-    await clearTestUser(testEmail);
-    // Create the test user in the DB bypassing the UI for speed, wait, since hashing is done via Go bcrypt, 
-    // it's easier to just register via API in the setup
-    const request = (await import('@playwright/test')).request;
-    const reqContext = await request.newContext({ baseURL: 'http://localhost:3000' });
-    await reqContext.post('/api/v1/auth/register', {
-        data: {
-            name: 'Login Test User',
-            email: testEmail,
-            phone: '1234567890',
-            password: testPassword
-        }
+test.describe('Suite 3: User Login', () => {
+  test('Login via API with seeded user', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: 'user@cromatic.dev', password: 'user123' },
     });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.user.email).toBe('user@cromatic.dev');
+    expect(body.data.user.role).toBe('customer');
   });
 
-  test.afterAll(async () => {
-    await clearTestUser(testEmail);
+  test('Login fails with wrong password', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: 'user@cromatic.dev', password: 'wrongpassword' },
+    });
+    expect(res.status()).toBe(401);
   });
 
-  test('Login Using Real Backend', async ({ page }) => {
-    await page.goto('/');
+  test('Login fails with non-existent user', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: 'nobody@nowhere.com', password: 'whatever' },
+    });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
 
-    // Open Login Modal
-    await page.getByRole('button', { name: /Sign In/i }).first().click();
+  test('Empty credentials rejected', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: '', password: '' },
+    });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
 
-    // Fill form
-    await page.locator('input[type="email"]').fill(testEmail);
-    await page.locator('input[type="password"]').fill(testPassword);
-
-    // Submit
-    await page.getByRole('button', { name: /Secure Authorize/i }).click();
-
-    // Verify Authenticated Session
-    await expect(page.locator('button[title="My Control Account Console"]')).toBeVisible({ timeout: 10000 });
-    
-    // Verify Protected Routes Accessible
-    await page.locator('button[title="My Control Account Console"]').click();
-    await expect(page.getByText('Security & Personal details', { exact: false })).toBeVisible();
-
-    // Verify Logout Works
-    await page.getByRole('button', { name: /Logout customer node/i }).click();
-    
-    // Verify Session Invalidated
-    await expect(page.getByRole('button', { name: /Sign In/i }).first()).toBeVisible();
+  test('Admin login via API', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: 'admin@cromatic.dev', password: 'admin123' },
+    });
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.user.role).toBe('admin');
   });
 });

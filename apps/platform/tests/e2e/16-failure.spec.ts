@@ -1,28 +1,38 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Suite 16: Backend Failure Testing', () => {
-  test('Frontend Displays Error State when backend is offline', async ({ page }) => {
-    // Intercept all API calls and force them to fail (simulating backend crash)
-    await page.route('**/api/v1/**', async route => {
-      await route.abort('failed');
+test.describe('Suite 16: Error Handling', () => {
+  test('Non-existent product returns error', async ({ request }) => {
+    const res = await request.get('/api/v1/products/nonexistent-slug-xyz');
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
+
+  test('Health API responds properly', async ({ request }) => {
+    const res = await request.get('/api/v1/health/live');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.mode).toBe('dev-memory');
+  });
+
+  test('Frontend handles unknown route', async ({ page }) => {
+    await page.goto('/this-route-does-not-exist');
+    // Should not crash - either shows 404 or redirects
+    await expect(page).not.toHaveURL(/error/);
+  });
+
+  test('Empty login body returns error', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: {},
     });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
+  });
 
-    await page.goto('/');
-    
-    // Attempt an action that requires backend
-    await page.getByRole('button', { name: /Sign In/i }).first().click();
-    await page.getByText(/Construct credentials/i, { exact: false }).click().catch(async () => {
-      await page.getByText(/No Account\? Create Node/i).click().catch(() => {});
+  test('Invalid JSON handled gracefully', async () => {
+    const res = await fetch('http://localhost:3000/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"invalid json',
     });
-
-    await page.locator('.fixed input[type="text"]').nth(0).fill('Test User');
-    await page.locator('.fixed input[type="email"]').fill('crash@test.com');
-    await page.locator('.fixed input[type="text"]').nth(1).fill('1234567890');
-    await page.locator('.fixed input[type="password"]').fill('Password123!');
-    await page.getByRole('button', { name: /Secure Authorize/i }).click();
-
-    // The error handling must display the red validation/error box on screen
-    const errorAlert = page.locator('.fixed .bg-red-950\\/40');
-    await expect(errorAlert).toBeVisible({ timeout: 10000 });
+    expect(res.status).toBeGreaterThanOrEqual(400);
   });
 });

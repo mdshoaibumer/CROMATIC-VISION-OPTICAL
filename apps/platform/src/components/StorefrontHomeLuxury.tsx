@@ -8,7 +8,6 @@ const Categories = lazy(() => import("./storefront/Categories").then(m => ({ def
 const Bestsellers = lazy(() => import("./storefront/Bestsellers").then(m => ({ default: m.Bestsellers })))
 const FeaturedCollections = lazy(() => import("./storefront/FeaturedCollections").then(m => ({ default: m.FeaturedCollections })))
 const Brands = lazy(() => import("./storefront/Brands").then(m => ({ default: m.Brands })))
-const VirtualTryOn = lazy(() => import("./storefront/VirtualTryOn").then(m => ({ default: m.VirtualTryOn })))
 const Testimonials = lazy(() => import("./storefront/Testimonials").then(m => ({ default: m.Testimonials })))
 const Newsletter = lazy(() => import("./storefront/Newsletter").then(m => ({ default: m.Newsletter })))
 const Footer = lazy(() => import("./storefront/Footer").then(m => ({ default: m.Footer })))
@@ -35,7 +34,6 @@ export default function StorefrontHomeLuxury() {
           <Bestsellers />
           <FeaturedCollections />
           <Brands />
-          <VirtualTryOn />
           <Testimonials />
           <Newsletter />
           <Footer />

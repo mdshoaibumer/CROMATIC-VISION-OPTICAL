@@ -1,45 +1,43 @@
 import { test, expect } from '@playwright/test';
-import { clearTestUser, setTestAdmin } from './helpers/db';
-
-const testAdminEmail = 'admin_test@cromaticvision.com';
-const testPassword = 'AdminSecret123!';
 
 test.describe('Suite 11: Admin Authentication', () => {
-  test.beforeEach(async ({ request }) => {
-    await clearTestUser(testAdminEmail);
-    // Create user and promote to admin in DB
-    await request.post('/api/v1/auth/register', {
-        data: {
-            name: 'Admin User',
-            email: testAdminEmail,
-            phone: '1111111111',
-            password: testPassword
-        }
+  test('Admin login via API', async ({ request }) => {
+    const res = await request.post('/api/v1/auth/login', {
+      data: { email: 'admin@cromatic.dev', password: 'admin123' },
     });
-    await setTestAdmin(testAdminEmail);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.user.role).toBe('admin');
   });
 
-  test.afterAll(async () => {
-    await clearTestUser(testAdminEmail);
+  test('Non-admin cannot access admin endpoints', async ({ request }) => {
+    await request.post('/api/v1/auth/login', {
+      data: { email: 'user@cromatic.dev', password: 'user123' },
+    });
+    const res = await request.get('/api/v1/admin/customers');
+    expect(res.status()).toBe(403);
   });
 
-  test('Admin Dashboard Loads and Protects Routes', async ({ page }) => {
-    await page.goto('/');
-    
-    // Switch to Admin View
-    await page.getByRole('button', { name: /EyeWare Admin Console/i }).click();
+  test('Admin login page renders', async ({ page }) => {
+    await page.goto('/admin');
+    await expect(page.getByText('Sign in to Cromatic Vision Optical Console')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('input[type="password"]')).toBeVisible();
+  });
 
-    // Login
-    await page.locator('input[type="email"]').fill(testAdminEmail);
-    await page.locator('input[type="password"]').fill(testPassword);
-    await page.getByRole('button', { name: /Secure access Sign In/i }).click();
+  test('Admin login via UI succeeds', async ({ page }) => {
+    await page.goto('/admin');
+    await page.locator('input[type="email"]').fill('admin@cromatic.dev');
+    await page.locator('input[type="password"]').fill('admin123');
+    await page.locator('#btn-admin-login').click();
+    await expect(page.getByText('Dashboard').first()).toBeVisible({ timeout: 15000 });
+  });
 
-    // Verify Admin Dashboard
-    await expect(page.getByText('Cromatic Vision Central Console', { exact: false })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Sales Terminal', { exact: false })).toBeVisible();
-
-    // Verify Modules are accessible
-    await page.getByRole('button', { name: 'Products', exact: true }).click();
-    await expect(page.getByRole('button', { name: /Add Optical Item/i })).toBeVisible();
+  test('Admin login fails with wrong credentials', async ({ page }) => {
+    await page.goto('/admin');
+    await page.locator('input[type="email"]').fill('admin@cromatic.dev');
+    await page.locator('input[type="password"]').fill('wrongpassword');
+    await page.locator('#btn-admin-login').click();
+    await expect(page.getByText(/invalid|denied/i).first()).toBeVisible({ timeout: 5000 });
   });
 });

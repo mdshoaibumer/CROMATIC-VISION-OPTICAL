@@ -1,39 +1,50 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Suite 4: Product Catalog', () => {
-  test('Products Load From API', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Browse Collection/i }).first().click().catch(() => {});
-    
-    // Verify products are displayed
-    await expect(page.locator('.grid').first()).toBeVisible();
+  test('Products API returns items', async ({ request }) => {
+    const res = await request.get('/api/v1/products');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.items.length).toBeGreaterThan(0);
   });
 
-  test('Filtering and Search Works', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Browse Collection/i }).first().click().catch(() => {});
-
-    // Search for a specific term (assuming "Titanium" or similar exists, but we test the search interaction)
-    const searchInput = page.getByPlaceholder(/Search catalog models/i);
-    await searchInput.fill('Titanium');
-    await page.waitForTimeout(1000); // Debounce wait
-
-    // Open filter sidebar
-    await page.getByRole('button', { name: /Filters/i }).click();
-
-    // Filtering
-    await page.getByText(/Engineering Studio/i).click().catch(() => {});
+  test('Categories API returns items', async ({ request }) => {
+    const res = await request.get('/api/v1/categories');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.length).toBeGreaterThanOrEqual(4);
+    const names = body.data.map((c: any) => c.name);
+    expect(names).toContain('Sunglasses');
+    expect(names).toContain('Eyeglasses');
   });
 
-  test('Product Details Open and Images Load', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Browse Collection/i }).first().click().catch(() => {});
-    
-    // Click on the first product card
-    const firstProduct = page.locator('div').filter({ hasText: 'Premium Cut Optics' }).first();
-    await expect(firstProduct).toBeVisible({ timeout: 15000 }).catch(() => {});
-    
-    // We assume there's at least one product if the DB is seeded. 
-    // The test requires DB to be seeded.
+  test('Single product by slug', async ({ request }) => {
+    const res = await request.get('/api/v1/products/aviator-classic-gold');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.name).toBe('Aviator Classic Gold');
+    expect(body.data.price).toBe(12999);
+    expect(body.data.category_name).toBe('Sunglasses');
+  });
+
+  test('Product filtering by category', async ({ request }) => {
+    const res = await request.get('/api/v1/products?category_id=1');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.items.length).toBeGreaterThan(0);
+  });
+
+  test('Product search', async ({ request }) => {
+    const res = await request.get('/api/v1/products?search=aviator');
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.data.items.length).toBeGreaterThan(0);
+    expect(body.data.items[0].name.toLowerCase()).toContain('aviator');
+  });
+
+  test('Products page displays grid', async ({ page }) => {
+    await page.goto('/products');
+    await expect(page.getByText('Aviator Classic Gold').first()).toBeVisible({ timeout: 15000 });
   });
 });

@@ -32,7 +32,6 @@ const navItems = [
     ]
   },
   { name: "Brands", href: "/products", hasDropdown: false, items: [] },
-  { name: "Virtual Try-On", href: "/try-on", hasDropdown: false, items: [] },
 ]
 
 export function Navbar() {

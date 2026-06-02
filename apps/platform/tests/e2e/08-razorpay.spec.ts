@@ -1,23 +1,26 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Suite 8: Razorpay', () => {
-  test('Use Razorpay Test Mode to complete payment', async ({ page }) => {
-    // Note: Interacting with the real Razorpay iframe in an E2E test requires specific 
-    // frame targeting and sandbox credentials.
-    await page.goto('/');
-
-    // If we reach the checkout page and click Razorpay
-    // We mock the backend's create-order response to prevent actual Razorpay popups if we don't have keys
-    await page.route('**/api/v1/payments/create-order', async route => {
-      const json = {
-        amount: 150.00,
-        provider_order_id: 'order_test_123',
-        id: 10
-      };
-      await route.fulfill({ json });
+test.describe('Suite 8: Payment Integration', () => {
+  test('Payment endpoint requires auth', async () => {
+    const res = await fetch('http://localhost:3000/api/v1/payments/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: 1 }),
     });
+    expect(res.status).toBe(401);
+  });
 
-    // In a full run, we would assert the "Razorpay SDK failed to load" or the actual popup.
-    // Given we are testing resilience, we verify the button exists and attempts the flow.
+  test('Payment verify with invalid signature', async ({ request }) => {
+    await request.post('/api/v1/auth/login', {
+      data: { email: 'user@cromatic.dev', password: 'user123' },
+    });
+    const res = await request.post('/api/v1/payments/verify', {
+      data: {
+        razorpay_order_id: 'order_fake',
+        razorpay_payment_id: 'pay_fake',
+        razorpay_signature: 'invalid',
+      },
+    });
+    expect(res.status()).toBeGreaterThanOrEqual(400);
   });
 });
