@@ -1,0 +1,27 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+.antigravity/
+playwright-report/
+test-results/
+
+# Go binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+tmp_server
+
+# Generated reports
+report*.json
+
+# One-time fix scripts
+fix_*.py
+resolve.py

@@ -1,0 +1,108 @@
+version: "3.8"
+
+services:
+  # ============================================================================
+  # PostgreSQL Database Service
+  # ============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: cromatic-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cromatic_vision_db}
+      POSTGRES_USER: ${POSTGRES_USER:-cromatic_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cromatic-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-cromatic_user} -d $${POSTGRES_DB:-cromatic_vision_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Redis Cache Engine
+  # ============================================================================
+  redis:
+    image: redis:7.2-alpine
+    container_name: cromatic-redis
+    restart: always
+    command: redis-server --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cromatic-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Database Administration GUI (Adminer)
+  # ============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: cromatic-adminer
+    restart: always
+    ports:
+      - "9090:8080"
+    networks:
+      - cromatic-network
+
+  # ============================================================================
+  # Cromatic Vision Optical - API Application Gateway
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cromatic-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      APP_NAME: "cromatic-vision-api"
+      APP_ENV: "development"
+      APP_PORT: "8080"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
+      POSTGRES_HOST: "postgres"
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-cromatic_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-cromatic_vision_db}
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set}
+    networks:
+      - cromatic-network
+
+# ==============================================================================
+# Persistent Volumes Definition
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ==============================================================================
+# Network Definition
+# ==============================================================================
+networks:
+  cromatic-network:
+    driver: bridge
+
+

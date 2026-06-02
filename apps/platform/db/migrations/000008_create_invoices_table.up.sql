@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS invoices (
+  id BIGSERIAL PRIMARY KEY,
+  order_id BIGINT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  invoice_number VARCHAR(100) NOT NULL UNIQUE,
+  invoice_url VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_order_id ON invoices(order_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(invoice_number);

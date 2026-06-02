@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+out/
+bin/
+
+# Compiled binaries
+*.exe
+tmp_server
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Python
+__pycache__/
+*.pyc
+
+# Misc
+.vite/

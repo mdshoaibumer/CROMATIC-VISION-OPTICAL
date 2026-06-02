@@ -1,0 +1,5 @@
+{
+  "workbench.startupEditor": "readme",
+  "tailwindCSS.lint.cssConflict": "ignore",
+  "tailwindCSS.lint.recommendedVariantOrder": "ignore"
+}
