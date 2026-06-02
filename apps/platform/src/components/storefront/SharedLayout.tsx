@@ -75,7 +75,7 @@ export function SectionHeader({
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, ease: easeOut as unknown as number[] }}
+      transition={{ duration: 0.6, ease: easeOut as [number, number, number, number] }}
       className={`${align === "center" ? "text-center" : ""} ${className}`}
     >
       {label && (
@@ -127,7 +127,7 @@ export function Reveal({
       ref={ref}
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay, ease: easeOut as unknown as number[] }}
+      transition={{ duration: 0.6, delay, ease: easeOut as [number, number, number, number] }}
       className={className}
     >
       {children}

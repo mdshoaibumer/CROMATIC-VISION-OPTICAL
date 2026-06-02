@@ -390,7 +390,7 @@ export default function ProductsModule() {
                     placeholder="e.g. Aero Titanium Oval Pro"
                     className="w-full bg-[#121214] border border-border px-3.5 py-2.5 rounded-lg text-sm text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-emerald-500/80 transition-all font-mono"
                   />
-                  {errors.name && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.name.message}</span>}
+                  {errors.name && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.name.message as string}</span>}
                 </div>
 
                 {/* Field 2 */}
@@ -405,7 +405,7 @@ export default function ProductsModule() {
                       <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                   </select>
-                  {errors.category_id && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.category_id.message}</span>}
+                  {errors.category_id && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.category_id.message as string}</span>}
                 </div>
 
                 {/* Row pricing & stocks */}
@@ -420,7 +420,7 @@ export default function ProductsModule() {
                       placeholder="Price"
                       className="w-full bg-[#121214] border border-border px-3.5 py-2.5 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-emerald-500/80 transition-all font-mono"
                     />
-                    {errors.price && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.price.message}</span>}
+                    {errors.price && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.price.message as string}</span>}
                   </div>
 
                   {/* Under 2 */}
@@ -432,7 +432,7 @@ export default function ProductsModule() {
                       placeholder="Stock quantity"
                       className="w-full bg-[#121214] border border-border px-3.5 py-2.5 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-emerald-500/80 transition-all font-mono"
                     />
-                    {errors.stock && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.stock.message}</span>}
+                    {errors.stock && <span className="text-xs text-rose-500 font-mono mt-1 block">{errors.stock.message as string}</span>}
                   </div>
                 </div>
 

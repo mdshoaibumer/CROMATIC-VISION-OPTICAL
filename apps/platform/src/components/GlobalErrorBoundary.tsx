@@ -18,7 +18,6 @@ class ErrorBoundaryInner extends React.Component<
   }
 
   componentDidCatch(error: Error) {
-    // @ts-expect-error - React 19 class component type inference limitation
     this.props.onError(error);
   }
 
@@ -26,7 +25,6 @@ class ErrorBoundaryInner extends React.Component<
     if (this.state.hasError) {
       return null; // Parent handles the UI
     }
-    // @ts-expect-error - React 19 class component type inference limitation
     return this.props.children;
   }
 }
