@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { Calendar, Clock, MapPin, User, Phone, Mail, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, MapPin, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FadeInSection } from "@/components/ui/animations";
 import { PageHero } from "@/components/ui/page-hero";
 
 const timeSlots = [

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { FadeInSection, StaggerContainer, StaggerItem } from "@/components/ui/animations";
+import { StaggerContainer, StaggerItem } from "@/components/ui/animations";
 import { PageHero } from "@/components/ui/page-hero";
 
 const brands = [

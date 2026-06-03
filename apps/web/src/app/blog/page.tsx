@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+
 import Link from "next/link";
-import { Clock, ArrowRight, Search } from "lucide-react";
-import { FadeInSection, StaggerContainer, StaggerItem } from "@/components/ui/animations";
+import { Clock } from "lucide-react";
+import { StaggerContainer, StaggerItem } from "@/components/ui/animations";
 import { Badge } from "@/components/ui/badge";
 import { PageHero } from "@/components/ui/page-hero";
 

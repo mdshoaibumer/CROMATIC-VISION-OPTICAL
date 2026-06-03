@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  MapPin,
-
-  Phone,
-  Mail,
-  Globe,
-} from "lucide-react";
+import { MapPin, Phone, Mail } from "lucide-react";
 
 const footerLinks = {
   shop: {

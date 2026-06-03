@@ -4,8 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Phone, Clock, Navigation, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FadeInSection } from "@/components/ui/animations";
 import { PageHero } from "@/components/ui/page-hero";
 
 const stores = [
