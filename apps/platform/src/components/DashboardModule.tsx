@@ -23,7 +23,7 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.1, delayChildren: 0.1 }
   }
-};
+} as const;
 
 const itemVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.96 },
@@ -31,18 +31,18 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", damping: 22, stiffness: 280 }
+    transition: { type: "spring" as const, damping: 22, stiffness: 280 }
   }
-};
+} as const;
 
 const chartVariants = {
   hidden: { opacity: 0, y: 30 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring", damping: 20, stiffness: 200, delay: 0.4 }
+    transition: { type: "spring" as const, damping: 20, stiffness: 200, delay: 0.4 }
   }
-};
+} as const;
 
 // Sparkline micro-chart component
 function Sparkline({ data, color = "#10b981", height = 32 }: { data: number[]; color?: string; height?: number }) {

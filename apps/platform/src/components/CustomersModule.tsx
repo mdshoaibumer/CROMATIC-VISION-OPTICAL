@@ -30,7 +30,7 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.06, delayChildren: 0.1 }
   }
-};
+} as const;
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
@@ -38,29 +38,29 @@ const cardVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", damping: 22, stiffness: 300 }
+    transition: { type: "spring" as const, damping: 22, stiffness: 300 }
   }
-};
+} as const;
 
 const drawerVariants = {
   hidden: { x: "100%", opacity: 0 },
   visible: {
     x: 0,
     opacity: 1,
-    transition: { type: "spring", damping: 28, stiffness: 300 }
+    transition: { type: "spring" as const, damping: 28, stiffness: 300 }
   },
   exit: {
     x: "100%",
     opacity: 0,
-    transition: { duration: 0.25, ease: "easeIn" }
+    transition: { duration: 0.25, ease: "easeIn" as const }
   }
-};
+} as const;
 
 const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
   exit: { opacity: 0 }
-};
+} as const;
 
 // Mini spending bar
 function SpendingBar({ amount, max }: { amount: number; max: number }) {
