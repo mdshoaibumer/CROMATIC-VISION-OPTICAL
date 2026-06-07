@@ -29,7 +29,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 # ==============================================================================
 # Runner Stage
 # ==============================================================================
-FROM alpine:3.19 AS runner
+FROM alpine:3.21 AS runner
 
 # Install security updates & ca-certificates
 RUN apk add --no-cache ca-certificates tzdata wget
