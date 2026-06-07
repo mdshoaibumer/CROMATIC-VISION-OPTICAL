@@ -87,7 +87,7 @@ jobs:
           JWT_SECRET: test-secret-key-minimum-32-characters-long
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: apps/platform/coverage.out
