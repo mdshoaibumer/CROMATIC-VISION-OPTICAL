@@ -1,9 +1,15 @@
+// Package config provides environment-based application configuration
+// with strict validation for production deployments. It loads values
+// from environment variables (with .env file support) and enforces
+// security constraints such as minimum JWT secret length and mandatory
+// credential presence in production mode.
 package config
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +27,8 @@ type Config struct {
 	PostgresPassword string
 	PostgresDB       string
 	PostgresSSLMode  string
+	PostgresMaxConns int
+	PostgresMinConns int
 
 	RedisHost     string
 	RedisPort     string
@@ -54,12 +62,13 @@ func Load() (*Config, error) {
 	_ = LoadEnvFile(".env")
 
 	appEnv := getEnv("APP_ENV", "development")
+	isProd := appEnv == "production"
 
 	jwtSecret := getEnv("JWT_SECRET", "")
-	if jwtSecret == "" && appEnv == "production" {
+	if jwtSecret == "" && isProd {
 		return nil, fmt.Errorf("CRITICAL: JWT_SECRET environment variable must be set in production")
 	}
-	if appEnv == "production" && len(jwtSecret) < 32 {
+	if isProd && len(jwtSecret) < 32 {
 		return nil, fmt.Errorf("CRITICAL: JWT_SECRET must be at least 32 characters in production")
 	}
 	if jwtSecret == "" {
@@ -67,8 +76,32 @@ func Load() (*Config, error) {
 	}
 
 	razorpayWebhookSecret := getEnv("RAZORPAY_WEBHOOK_SECRET", "")
-	if appEnv == "production" && razorpayWebhookSecret == "" {
+	if isProd && razorpayWebhookSecret == "" {
 		return nil, fmt.Errorf("CRITICAL: RAZORPAY_WEBHOOK_SECRET must be set in production")
+	}
+
+	// Strict production validations
+	if isProd {
+		required := map[string]string{
+			"POSTGRES_PASSWORD": getEnv("POSTGRES_PASSWORD", ""),
+			"POSTGRES_USER":     getEnv("POSTGRES_USER", ""),
+			"POSTGRES_DB":       getEnv("POSTGRES_DB", ""),
+			"ALLOWED_ORIGINS":   getEnv("ALLOWED_ORIGINS", ""),
+			"STORAGE_PROVIDER":  getEnv("STORAGE_PROVIDER", ""),
+		}
+		for key, val := range required {
+			if val == "" {
+				return nil, fmt.Errorf("CRITICAL: %s must be set in production", key)
+			}
+		}
+		// Storage provider must not be mock in production
+		if required["STORAGE_PROVIDER"] == "mock" {
+			return nil, fmt.Errorf("CRITICAL: STORAGE_PROVIDER cannot be 'mock' in production")
+		}
+		// ALLOWED_ORIGINS must not be wildcard in production
+		if required["ALLOWED_ORIGINS"] == "*" {
+			return nil, fmt.Errorf("CRITICAL: ALLOWED_ORIGINS cannot be '*' in production - specify explicit origins")
+		}
 	}
 
 	return &Config{
@@ -84,11 +117,13 @@ func Load() (*Config, error) {
 		PostgresPassword: getEnv("POSTGRES_PASSWORD", ""),
 		PostgresDB:       getEnv("POSTGRES_DB", "cromatic_vision_db"),
 		PostgresSSLMode: getEnv("POSTGRES_SSLMODE", func() string {
-			if appEnv == "production" {
+			if isProd {
 				return "require"
 			}
 			return "disable"
 		}()),
+		PostgresMaxConns: getEnvInt("POSTGRES_MAX_CONNS", 25),
+		PostgresMinConns: getEnvInt("POSTGRES_MIN_CONNS", 5),
 
 		RedisHost:     getEnv("REDIS_HOST", "localhost"),
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
@@ -159,4 +194,16 @@ func getEnv(key, fallback string) string {
 		return val
 	}
 	return fallback
+}
+
+func getEnvInt(key string, fallback int) int {
+	val := getEnv(key, "")
+	if val == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(val)
+	if err != nil {
+		return fallback
+	}
+	return n
 }

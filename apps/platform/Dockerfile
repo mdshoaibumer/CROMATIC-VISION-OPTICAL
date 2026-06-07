@@ -1,7 +1,13 @@
 # ==============================================================================
+# Cromatic Vision Optical - Production Container Image
+# Multi-stage build: Go binary compilation + minimal Alpine runtime
+# Includes container HEALTHCHECK for orchestrator-level liveness probing
+# ==============================================================================
+
+# ==============================================================================
 # Build Stage
 # ==============================================================================
-FROM golang:1.26-alpine AS builder
+FROM golang:1.22-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git make build-base
@@ -26,7 +32,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 FROM alpine:3.19 AS runner
 
 # Install security updates & ca-certificates
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata wget
 
 # Create dedicated system group and application user
 RUN addgroup -S cromaticgrp && adduser -S cromaticuser -G cromaticgrp
@@ -48,6 +54,10 @@ USER cromaticuser
 
 # Expose standard service gateway port
 EXPOSE 8080
+
+# Container health check
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health/live || exit 1
 
 # Specify backend startup command
 ENTRYPOINT ["./server"]

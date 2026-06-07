@@ -45,7 +45,10 @@ func New() (*App, error) {
 	defer cancel()
 
 	// 3. Connect to Postgres DB
-	db, err := database.Connect(ctx, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, cfg.PostgresSSLMode, log)
+	db, err := database.Connect(ctx, cfg.PostgresHost, cfg.PostgresPort, cfg.PostgresUser, cfg.PostgresPassword, cfg.PostgresDB, cfg.PostgresSSLMode, log,
+		database.WithMaxConns(int32(cfg.PostgresMaxConns)),
+		database.WithMinConns(int32(cfg.PostgresMinConns)),
+	)
 	if err != nil {
 		log.Error("Database connection dropped", "error", err)
 		return nil, err

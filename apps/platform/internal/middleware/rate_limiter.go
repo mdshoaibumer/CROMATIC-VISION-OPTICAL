@@ -1,3 +1,7 @@
+// Package middleware provides HTTP middleware for the Cromatic Vision Optical API.
+// This file implements an in-memory token-bucket rate limiter with automatic
+// background cleanup of expired entries. Suitable for single-instance deployments;
+// for multi-instance use DistributedRateLimiter backed by Redis.
 package middleware
 
 import (
@@ -20,15 +24,19 @@ type rateLimiterEntry struct {
 	resetAt time.Time
 }
 
-// RateLimiter creates an in-memory rate limiting middleware
+// RateLimiter creates an in-memory rate limiting middleware.
+// The cleanup goroutine runs for the lifetime of the server process.
+// For multi-instance deployments, use DistributedRateLimiter instead.
 func RateLimiter(cfg RateLimiterConfig) fiber.Handler {
 	var mu sync.Mutex
 	clients := make(map[string]*rateLimiterEntry)
 
-	// Background cleanup of expired entries every minute
-	// Uses a ticker that can be garbage-collected when the middleware is no longer referenced
-	ticker := time.NewTicker(1 * time.Minute)
+	// Background cleanup of expired entries every minute.
+	// This goroutine is intentionally long-lived (server lifetime) and will be
+	// reclaimed on process exit. This is acceptable for process-scoped middleware.
 	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
 		for range ticker.C {
 			mu.Lock()
 			now := time.Now()

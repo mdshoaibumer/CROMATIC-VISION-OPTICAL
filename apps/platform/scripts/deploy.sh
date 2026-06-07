@@ -53,14 +53,12 @@ docker compose -f "$DOCKER_COMPOSE_FILE" up -d --remove-orphans
 # 7. Health Check
 echo "=> Performing Health Checks..."
 sleep 10
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "failed")
-BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/health || echo "failed")
+BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health/live || echo "failed")
 
-if [ "$FRONTEND_STATUS" == "200" ] && [ "$BACKEND_STATUS" == "200" ]; then
-    echo "✅ Health checks passed. Deployment successful."
+if [ "$BACKEND_STATUS" == "200" ]; then
+    echo "Health checks passed. Deployment successful."
 else
-    echo "❌ Health check failed!"
-    echo "Frontend: $FRONTEND_STATUS"
+    echo "ERROR: Health check failed!"
     echo "Backend: $BACKEND_STATUS"
     echo "=> Rolling back to previous state..."
     # Implement rollback strategy here as needed

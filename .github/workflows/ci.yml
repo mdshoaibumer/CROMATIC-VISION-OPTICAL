@@ -1,3 +1,5 @@
+# Cromatic Vision Optical - CI/CD Pipeline
+# Runs Go backend tests, linting, and Playwright E2E on push/PR to main
 name: CI/CD Pipeline
 
 on:
@@ -7,7 +9,7 @@ on:
     branches: [main]
 
 env:
-  GO_VERSION: "1.26"
+  GO_VERSION: "1.22"
   NODE_VERSION: "20"
 
 jobs:

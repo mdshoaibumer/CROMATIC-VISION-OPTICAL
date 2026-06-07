@@ -1,3 +1,6 @@
+// Package database manages PostgreSQL connection pooling via pgxpool.
+// It supports functional options for tuning pool parameters (max/min connections)
+// and includes automatic health checks and structured logging of pool metrics.
 package database
 
 import (
@@ -9,14 +12,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// DB wraps pgxpool.Pool and exposes helpers
+// DB wraps pgxpool.Pool and exposes helpers for query execution and lifecycle management.
 type DB struct {
 	Pool *pgxpool.Pool
 	log  *slog.Logger
 }
 
 // Connect initializes a connection pool and pings the PostgreSQL database
-func Connect(ctx context.Context, host, port, user, password, dbname, sslmode string, log *slog.Logger) (*DB, error) {
+func Connect(ctx context.Context, host, port, user, password, dbname, sslmode string, log *slog.Logger, opts ...PoolOption) (*DB, error) {
 	if sslmode == "" {
 		sslmode = "require"
 	}
@@ -31,11 +34,17 @@ func Connect(ctx context.Context, host, port, user, password, dbname, sslmode st
 		return nil, fmt.Errorf("unable to parse connection string: %w", err)
 	}
 
-	// Dynamic sizing of the pool
+	// Default pool configuration (can be overridden via opts)
 	config.MaxConns = 25
 	config.MinConns = 5
 	config.MaxConnIdleTime = 15 * time.Minute
 	config.MaxConnLifetime = 1 * time.Hour
+	config.HealthCheckPeriod = 30 * time.Second
+
+	// Apply overrides
+	for _, opt := range opts {
+		opt(config)
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
@@ -51,12 +60,37 @@ func Connect(ctx context.Context, host, port, user, password, dbname, sslmode st
 		return nil, fmt.Errorf("failed to ping PostgreSQL: %w", err)
 	}
 
-	log.Info("Successful connection to PostgreSQL!")
+	log.Info("Successful connection to PostgreSQL!",
+		"max_conns", config.MaxConns,
+		"min_conns", config.MinConns,
+		"max_conn_lifetime", config.MaxConnLifetime,
+	)
 
 	return &DB{
 		Pool: pool,
 		log:  log,
 	}, nil
+}
+
+// PoolOption allows customizing the pgxpool configuration
+type PoolOption func(*pgxpool.Config)
+
+// WithMaxConns sets the maximum number of connections in the pool
+func WithMaxConns(n int32) PoolOption {
+	return func(c *pgxpool.Config) {
+		if n > 0 {
+			c.MaxConns = n
+		}
+	}
+}
+
+// WithMinConns sets the minimum number of connections maintained in the pool
+func WithMinConns(n int32) PoolOption {
+	return func(c *pgxpool.Config) {
+		if n >= 0 {
+			c.MinConns = n
+		}
+	}
 }
 
 // Close gracefully closes the pgx pool
